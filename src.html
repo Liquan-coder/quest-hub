@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>闖關學習區</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: one-screen app. Stats bar on top, a winding trail of round lesson buttons, tabs at the bottom; lessons open full screen.
+     Palette: bright grass green for go/progress, sky blue for "selected", orange for streaks and the mascot's header, gold for cleared lessons. */
+  --bg:#FFFFFF; --grid:#FFFFFF; --surface:#FFFFFF; --line:#E3E8E4; --ink:#2F3A33; --muted:#66726A;
+  --accent:#3DB54A; --accent-d:#2C8F38; --accent-bg:#E6F7E8;
+  --sel:#1E9BE0; --sel-d:#167DB8; --sel-bg:#DFF2FC;
+  --stamp:#F08A24; --stamp-d:#C96C10; --stamp-bg:#FFF0DF;
+  --gold:#F5B800; --gold-d:#CF9A00; --heart:#E5484D;
+  --ok:#279036; --ok-d:#1D6E29; --ok-bg:#DDF5DF;
+  --bad:#D93A3F; --bad-bg:#FFE3E3; --warn:#8A5A00; --warn-bg:#FFF1CC;
+  --lock:#E3E8E4; --code-bg:#1C2620; --code-ink:#DDE8E0;
+  --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --display:"Baloo 2","Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14191E; --grid:#14191E; --surface:#1C242B; --line:#33404A; --ink:#EEF3F0; --muted:#A6B3AC;
+  --accent:#58C766; --accent-d:#3A9A47; --accent-bg:#1D3324;
+  --sel:#48B4F0; --sel-d:#2C88BD; --sel-bg:#173246;
+  --stamp:#FF9E45; --stamp-d:#C46F1E; --stamp-bg:#3A2A18;
+  --gold:#FFC933; --gold-d:#C99A10; --heart:#FF6B6F;
+  --ok:#5FD070; --ok-d:#3A9A47; --ok-bg:#17311D;
+  --bad:#FF7A7E; --bad-bg:#3A1F22; --warn:#E5B54A; --warn-bg:#3A2E12;
+  --lock:#2A343C; --code-bg:#0E1411; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14191E; --grid:#14191E; --surface:#1C242B; --line:#33404A; --ink:#EEF3F0; --muted:#A6B3AC;
+  --accent:#58C766; --accent-d:#3A9A47; --accent-bg:#1D3324;
+  --sel:#48B4F0; --sel-d:#2C88BD; --sel-bg:#173246;
+  --stamp:#FF9E45; --stamp-d:#C46F1E; --stamp-bg:#3A2A18;
+  --gold:#FFC933; --gold-d:#C99A10; --heart:#FF6B6F;
+  --ok:#5FD070; --ok-d:#3A9A47; --ok-bg:#17311D;
+  --bad:#FF7A7E; --bad-bg:#3A1F22; --warn:#E5B54A; --warn-bg:#3A2E12;
+  --lock:#2A343C; --code-bg:#0E1411; color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.6}
+body{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+svg{display:block}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.92em}
+b{font-weight:900}
+#app{height:100%;display:flex;flex-direction:column;max-width:600px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-bottom:1px solid var(--line)}
+.topic-btn{display:flex;flex-direction:column;align-items:flex-start;min-height:44px;min-width:0;padding:2px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-align:left}
+.topic-btn small{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--muted);line-height:1.3}
+.topic-btn b{font-size:15px;line-height:1.3}
+.stats{display:flex;gap:12px;flex:none}
+.stat{display:flex;align-items:center;gap:3px;font-family:var(--display);font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
+.stat svg{width:18px;height:18px;color:var(--stamp)}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px max(16px,env(safe-area-inset-right,0px)) 36px max(16px,env(safe-area-inset-left,0px))}
+.tabbar{display:flex;border-top:1px solid var(--line);background:var(--surface)}
+.tab{flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:none;border:0;font-size:12px;font-weight:700;color:var(--muted)}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--accent)}
+.tab{font-family:var(--display);font-weight:800}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:14px;border:0;font-family:var(--display);font-weight:800;font-size:16px;letter-spacing:.03em;background:var(--accent);color:var(--surface);box-shadow:0 4px 0 var(--accent-d)}
+.btn:active:not(:disabled),.btn.press:not(:disabled){transform:translateY(4px);box-shadow:none}
+.hzb{position:relative}
+.hz{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:.011;cursor:pointer;z-index:1}
+.btn:disabled{background:var(--lock);color:var(--muted);box-shadow:none;cursor:default}
+.btn.ok{background:var(--ok);box-shadow:0 4px 0 var(--ok-d)}
+.btn.bad{background:var(--bad);box-shadow:0 4px 0 #A82A2E}
+.btn.ghost{background:var(--surface);color:var(--sel);border:2px solid var(--line);box-shadow:0 4px 0 var(--line)}
+.btn.wide{width:100%}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-size:15px;font-weight:900}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.bar{height:10px;border-radius:99px;background:var(--lock);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .4s}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+/* trail */
+.unit{border-radius:14px;padding:12px 16px;color:var(--surface);background:var(--accent);box-shadow:0 4px 0 var(--accent-d);margin:6px 0 32px}
+.unit.must small::after{content:"必考";margin-left:8px;padding:0 7px;border-radius:99px;background:var(--gold);color:var(--ink);font-family:var(--body);font-weight:900;letter-spacing:0}
+.unit small{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.06em;opacity:.92}
+.unit b{display:block;font-size:17px;font-weight:900;margin-top:1px;text-wrap:balance}
+.unit span{display:block;font-size:13px;opacity:.95;margin-top:2px}
+.path{display:flex;flex-direction:column;align-items:center;gap:30px;margin-bottom:30px}
+.nrow{position:relative;transform:translateX(var(--off));display:flex;flex-direction:column;align-items:center;width:150px}
+.node{width:66px;height:62px;border-radius:50%;background:var(--lock);border:0;box-shadow:0 6px 0 var(--line);color:var(--muted);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px;position:relative}
+.node.cur{background:var(--accent);color:var(--surface);box-shadow:0 6px 0 var(--accent-d)}
+.node.done{background:var(--gold);color:var(--surface);box-shadow:0 6px 0 var(--gold-d)}
+.node.exam{border-radius:18px}
+.node svg{width:26px;height:26px}
+.bubble{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--surface);color:var(--accent);border:2px solid var(--line);font-weight:900;font-size:12px;padding:1px 9px;border-radius:10px}
+.nlabel{text-align:center;font-size:13px;font-weight:700;color:var(--ink);margin-top:5px;line-height:1.3;text-wrap:balance}
+.nscore{font-family:var(--display);font-weight:800;font-size:13px;color:var(--gold-d)}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:none}
+#sheet.on{display:block}
+.sbg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.spanel{position:absolute;left:0;right:0;bottom:0;max-width:600px;max-height:85%;overflow-y:auto;margin:0 auto;background:var(--surface);border-radius:16px 16px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.spanel h2{margin:0;font-size:18px;font-weight:900;text-wrap:balance}
+.sacts{display:flex;flex-direction:column;gap:10px}
+.topic-opt{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 12px;min-height:56px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.topic-opt.on{border:2px solid var(--sel);background:var(--sel-bg)}
+
+/* lesson */
+#lesson{position:fixed;inset:0;z-index:40;display:none;background:var(--bg)}
+#lesson.on{display:block}
+.lwrap{height:100%;max-width:600px;margin:0 auto;display:flex;flex-direction:column;background:var(--surface);border-inline:1px solid var(--line)}
+.lhead{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 14px 6px}
+.x{background:none;border:0;color:var(--muted);width:44px;height:44px;display:grid;place-items:center;flex:none;margin:-6px}
+.x svg{width:22px;height:22px}
+.pbar{flex:1;height:16px;border-radius:99px;background:var(--lock);overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.hearts{display:flex;align-items:center;gap:3px;color:var(--heart);font-family:var(--display);font-weight:800;font-size:17px;flex:none}
+.hearts svg{width:22px;height:22px}
+.combo{font-weight:900;color:var(--stamp);font-size:13px;min-height:20px;padding:0 16px}
+.lbody{flex:1;overflow-y:auto;padding:6px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.prompt{font-size:17px;font-weight:900;margin:0;line-height:1.45}
+.prompt.en{font-size:15px;font-weight:700}
+.tag{align-self:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.flag{display:inline-block;font-family:var(--body);font-size:12px;font-weight:700;color:var(--warn);border:1px solid var(--warn);border-radius:99px;padding:0 7px;margin-left:6px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:52px;padding:8px 14px;border-radius:14px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);background:var(--surface);font-size:14px;font-weight:700}
+.opt .k{flex:none;min-width:26px;height:26px;padding:0 4px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.opt.sel{border-color:var(--sel);box-shadow:0 3px 0 var(--sel);background:var(--sel-bg);color:var(--sel)}
+.opt.ok{border-color:var(--ok);box-shadow:0 3px 0 var(--ok);background:var(--ok-bg);color:var(--ok)}
+.opt.bad{border-color:var(--bad);box-shadow:0 3px 0 var(--bad);background:var(--bad-bg);color:var(--bad)}
+.intro{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.intro h3{margin:0;font-size:16px;font-weight:900}
+.formula{display:block;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px;overflow-x:auto;white-space:pre-wrap;margin:2px 0}
+.expr{display:block;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px;overflow-x:auto;white-space:pre-wrap;margin:6px 0}
+.tw{overflow-x:auto;margin:6px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+th{background:var(--accent-bg)}
+.ansline{min-height:56px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;padding-bottom:8px}
+.bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tile{min-width:44px;min-height:46px;padding:0 12px;border-radius:12px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:14px}
+.tile.used{color:transparent;background:var(--lock);box-shadow:none;border-color:var(--lock)}
+.tinput{width:100%;min-height:50px;font-family:var(--mono);font-weight:700;font-size:16px;padding:10px 12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.tinput:focus{border-color:var(--sel);outline:none}
+.hint{font-family:var(--mono);font-size:14px;letter-spacing:2px;color:var(--muted);word-break:break-word}
+.linkbtn{align-self:flex-start;min-height:44px;background:none;border:0;padding:0;color:var(--accent);font-weight:700;font-size:13px}
+.match{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.mt{min-height:56px;padding:6px 8px;border-radius:14px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);background:var(--surface);font-weight:700;font-size:13px;line-height:1.3;word-break:break-word}
+.mt.sel{border-color:var(--sel);box-shadow:0 3px 0 var(--sel);background:var(--sel-bg);color:var(--sel)}
+.mt.gone{opacity:.35;box-shadow:none;background:var(--ok-bg);border-color:var(--ok)}
+.mt.bad{border-color:var(--bad);background:var(--bad-bg);color:var(--bad);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+/* guide */
+.goal{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--stamp-bg);font-weight:700;font-size:14px;line-height:1.5}
+.goal svg{width:22px;height:22px;color:var(--stamp);flex:none;margin-top:2px}
+.gnotes{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-left:3px solid var(--ok);background:var(--ok-bg);border-radius:0 10px 10px 0}
+.gnotes:empty{display:none}
+.gn{display:flex;gap:6px;align-items:flex-start;font-size:13px;font-weight:700;color:var(--ok)}
+.gn svg{width:16px;height:16px;flex:none;margin-top:3px}
+.gstep{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.06em}
+.gfb{border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.6;display:flex;flex-direction:column;gap:6px;animation:rise .24s ease-out}
+.gfb.ok{background:var(--ok-bg)}.gfb.bad{background:var(--bad-bg)}
+.gfb .t{font-size:15px;font-weight:900}.gfb.ok .t{color:var(--ok)}.gfb.bad .t{color:var(--bad)}
+/* ask AI */
+.askai{display:none;align-self:flex-start;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:99px;border:2px solid var(--sel);background:var(--surface);color:var(--sel);font-weight:800;font-size:13px}
+html.ai .askai{display:inline-flex}
+.askai svg{width:17px;height:17px}
+#chat{position:fixed;inset:0;z-index:60;display:none}
+#chat.on{display:block}
+.cpanel{position:absolute;left:0;right:0;bottom:0;max-width:600px;height:88%;margin:0 auto;background:var(--surface);border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);animation:rise .2s ease-out}
+.chead{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px}
+.chead b{font-size:17px;font-weight:900}
+.cctx{margin:0 16px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px}
+.cctx summary{cursor:pointer;font-weight:700;color:var(--muted);min-height:28px}
+.cctx div{white-space:pre-wrap;max-height:28vh;overflow:auto;margin-top:6px;color:var(--muted)}
+.cmsgs{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:10px}
+.cmsg{max-width:88%;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1.65;word-break:break-word}
+.cmsg.u{align-self:flex-end;background:var(--sel);color:#fff;border-bottom-right-radius:4px}
+.cmsg.a{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px}
+.cmsg.a code{background:var(--code-bg);color:var(--code-ink);padding:1px 5px;border-radius:5px}
+.cmsg.err{color:var(--bad);border-color:var(--bad)}
+.cquick{display:flex;gap:6px;overflow-x:auto;padding:0 16px 6px}
+.cquick button{flex:none;min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;font-weight:700}
+.cform{display:flex;gap:8px;padding:6px 16px 6px;align-items:flex-end}
+.cform textarea{flex:1;min-width:0;min-height:44px;max-height:120px;resize:none;font:inherit;font-size:16px;line-height:1.4;padding:10px 12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.cform textarea:focus{border-color:var(--sel);outline:none}
+.cform .btn{min-height:44px;padding:0 16px;font-size:15px;flex:none}
+.cnote{padding:0 16px 8px}
+@media (min-width:900px){.cmsg{font-size:15.5px}}
+/* sort */
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:8px;border:2px dashed var(--line);border-radius:14px;align-items:center}
+.chip{min-height:44px;padding:4px 12px;border-radius:12px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);background:var(--surface);font-weight:700;font-size:14px;text-align:left;line-height:1.35}
+.chip.sel{border-color:var(--sel);box-shadow:0 3px 0 var(--sel);background:var(--sel-bg);color:var(--sel)}
+.chip.ok{border-color:var(--ok);box-shadow:0 3px 0 var(--ok);background:var(--ok-bg);color:var(--ok)}
+.chip.bad{border-color:var(--bad);box-shadow:0 3px 0 var(--bad);background:var(--bad-bg);color:var(--bad)}
+.bks{display:flex;flex-direction:column;gap:8px}
+.bk{border:2px solid var(--line);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:6px;background:var(--bg);transition:border-color .15s}
+.bk.ready{border-color:var(--sel)}
+.bkh{min-height:44px;border:0;border-radius:10px;background:var(--accent-bg);color:var(--ink);font-weight:900;font-size:14px;text-align:left;padding:0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bkp{font-size:12px;font-weight:700;color:var(--muted);opacity:0;transition:opacity .15s}
+.bk.ready .bkh{background:var(--sel-bg);color:var(--sel)}
+.bk.ready .bkp{opacity:1;color:var(--sel)}
+.bkc{display:flex;flex-wrap:wrap;gap:6px}
+.bkc:empty{display:none}
+/* drag */
+.drl{display:flex;flex-direction:column;gap:8px}
+.dr{display:flex;align-items:center;gap:6px;min-height:52px;padding:4px 4px 4px 8px;border-radius:14px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);background:var(--surface);font-weight:700;font-size:14px;line-height:1.35;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab;transition:transform .15s}
+.dr.lift{transition:none;position:relative;z-index:2;border-color:var(--sel);box-shadow:0 10px 20px rgba(0,0,0,.2);background:var(--sel-bg);color:var(--sel);cursor:grabbing}
+.dr.ok{border-color:var(--ok);box-shadow:0 3px 0 var(--ok);background:var(--ok-bg);color:var(--ok)}
+.dr.bad{border-color:var(--bad);box-shadow:0 3px 0 var(--bad);background:var(--bad-bg);color:var(--bad)}
+.drh{flex:none;color:var(--muted)}
+.drh svg{width:18px;height:18px}
+.drt{flex:1;min-width:0}
+.dra{flex:none;width:40px;height:40px;border-radius:10px;border:0;background:var(--bg);color:var(--muted);display:grid;place-items:center;padding:0}
+.dra:disabled{opacity:.3;cursor:default}
+.dra svg{width:18px;height:18px}
+/* range */
+.rng{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg)}
+.rv{display:flex;align-items:baseline;justify-content:center;gap:6px;font-weight:700}
+.rv b{font-family:var(--display);font-size:34px;font-weight:800;color:var(--sel);font-variant-numeric:tabular-nums;line-height:1.1}
+.rrow{display:flex;align-items:center;gap:8px}
+#rg{flex:1;min-width:0;height:36px;margin:0;accent-color:var(--sel)}
+.rstep{width:44px;height:44px;background:var(--surface);border:2px solid var(--line);font-size:22px;font-weight:900;color:var(--sel);line-height:1}
+.rview{font-size:14px;display:flex;flex-direction:column;gap:6px}
+.rview .formula{margin:0}
+.rbars{display:flex;flex-direction:column;gap:4px}
+.rbar{display:flex;align-items:center;gap:8px;font-size:13px}
+.rbar span:first-child{width:44px;flex:none;color:var(--muted)}
+.rbar i{display:block;height:14px;border-radius:99px;background:var(--line);min-width:6px}
+.rbar.hot i{background:var(--bad)}
+.rbar.hot{color:var(--bad);font-weight:900}
+.batch{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:13px}
+.batch b{width:52px;flex:none;color:var(--muted);font-weight:700}
+.batch i{font-style:normal;padding:0 6px;border-radius:6px;background:var(--sel-bg);color:var(--sel);font-weight:700;font-family:var(--mono);font-size:12px}
+.batch i.h{background:var(--stamp-bg);color:var(--stamp)}
+.warn{color:var(--bad);font-weight:900}
+.foot{border-top:1px solid var(--line);padding:10px 16px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;max-height:58%;overflow-y:auto;flex:none}
+.foot.ok{background:var(--ok-bg);border-color:transparent}
+.foot.bad{background:var(--bad-bg);border-color:transparent}
+.fb{display:flex;flex-direction:column;gap:3px}
+.fb .t{font-size:19px;font-weight:900}
+.foot.ok .fb .t{color:var(--ok)} .foot.bad .fb .t{color:var(--bad)}
+.fb .a{font-size:13px;line-height:1.55}
+.fb .a .ans{font-weight:900}
+.flowbox{overflow-x:auto;background:var(--surface);border-radius:8px;padding:6px}
+.flowbox svg{margin:0 auto;max-width:100%;height:auto}
+.flowbox text{font-family:var(--body);fill:var(--ink)}
+.ansbox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+.ansbox p{margin:0 0 8px}
+.ansbox p:last-child{margin-bottom:0}
+.ansbox .note{color:var(--muted)}
+.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px 16px;text-align:center;overflow-y:auto}
+.result h1{margin:0;font-size:22px;font-weight:900;text-wrap:balance}
+.rstamp{width:112px;height:112px;border-radius:50%;background:var(--gold);color:var(--surface);display:grid;place-items:center;font-weight:900;font-size:22px;box-shadow:inset 0 0 0 4px var(--gold),inset 0 0 0 7px var(--surface),0 6px 0 var(--gold-d);transform:rotate(-9deg);animation:press .35s ease-out}
+.rstamp.no{background:var(--lock);color:var(--muted);box-shadow:none;transform:none;animation:none}
+@keyframes press{0%{transform:rotate(-9deg) scale(1.8);opacity:0}70%{transform:rotate(-9deg) scale(.94);opacity:1}100%{transform:rotate(-9deg) scale(1)}}
+.rt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.rtile{border:2px solid var(--line);border-radius:14px;padding:8px 4px}
+.rtile small{display:block;color:var(--muted);font-size:12px}
+.rtile b{display:block;font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums}
+
+/* lists */
+.search{width:100%;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:16px}
+.wl{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.wi{padding:9px 0;border-bottom:1px solid var(--line)}
+.wi:last-child{border-bottom:0}
+.wi b{display:block}
+.wi span{font-size:13px;color:var(--muted)}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700}
+.tg{width:52px;height:32px;border-radius:99px;background:var(--lock);border:0;position:relative;flex:none}
+.tg::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:var(--surface);transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.tg.on{background:var(--accent)}
+.tg.on::after{left:24px}
+.big-num{font-family:var(--mono);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums}
+@media (min-width:900px){
+  #app,.lwrap,.spanel{max-width:760px}
+  html,body{font-size:16px}
+  .prompt{font-size:20px}.prompt.en{font-size:17px}
+  .opt{font-size:16px}.mt{font-size:15px}
+  .fb .a,.ansbox,.small,table,.nlabel{font-size:14.5px}
+  .unit b{font-size:18px}
+}
+/* feedback motion */
+.mascot{flex:none;overflow:visible}
+.mascot.ok{animation:hop .55s ease-out}
+.mascot.bad{animation:droop .6s ease-out}
+.mascot.win{animation:cheer .9s ease-in-out 2}
+.mascot.idle{animation:breathe 2.6s ease-in-out infinite}
+@keyframes hop{0%{transform:none}35%{transform:translateY(-12px) rotate(-6deg)}65%{transform:none}82%{transform:translateY(-4px)}100%{transform:none}}
+@keyframes droop{0%{transform:none}30%{transform:translateX(-4px) rotate(-5deg)}60%{transform:translateX(4px) rotate(5deg)}100%{transform:none}}
+@keyframes cheer{0%,100%{transform:none}25%{transform:translateY(-10px) rotate(-5deg)}75%{transform:translateY(-10px) rotate(5deg)}}
+@keyframes breathe{50%{transform:translateY(-2px)}}
+.fbrow{display:flex;align-items:center;gap:10px}
+.foot.ok,.foot.bad{animation:rise .24s ease-out}
+@keyframes rise{from{transform:translateY(36px);opacity:.3}to{transform:none;opacity:1}}
+.opt.ok,.mt.gone,.tile.pop{animation:pop .32s ease-out}
+.opt.bad{animation:shake .35s}
+@keyframes pop{45%{transform:scale(1.04)}}
+.btn.go-ready{animation:ready .3s ease-out}
+@keyframes ready{50%{transform:scale(1.02)}}
+.hearts.lost svg{animation:heartloss .7s ease-out}
+@keyframes heartloss{25%{transform:scale(1.5)}55%{transform:scale(.7) rotate(-14deg)}100%{transform:none}}
+.lhead{position:relative}
+.pbar i{position:relative}
+.pbar i::after{content:"";position:absolute;left:6px;right:6px;top:3px;height:3px;border-radius:99px;background:rgba(255,255,255,.4)}
+.pbar.bump i{animation:glow .6s ease-out}
+@keyframes glow{40%{filter:brightness(1.35) saturate(1.2)}}
+.xpf{position:absolute;right:20px;top:42px;font-family:var(--display);font-weight:800;font-size:16px;color:var(--gold-d);pointer-events:none;animation:floatup .9s ease-out forwards}
+@keyframes floatup{0%{opacity:0;transform:translateY(8px)}20%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+.cb{display:inline-flex;align-items:center;gap:4px;padding:1px 10px;border-radius:99px;background:var(--stamp-bg);color:var(--stamp);animation:pop .4s ease-out}
+.cb svg{width:14px;height:14px}
+.cb.big{background:var(--stamp);color:var(--surface);font-family:var(--display);font-size:14px;animation:pop .5s ease-out}
+.node{transition:transform .12s}
+.node:active{transform:translateY(4px);box-shadow:0 2px 0 var(--line)}
+.node.cur::after{content:"";position:absolute;inset:-9px;border-radius:inherit;border:4px solid var(--accent);opacity:0;animation:ring 1.8s ease-out infinite}
+@keyframes ring{0%{opacity:.6;transform:scale(.9)}100%{opacity:0;transform:scale(1.25)}}
+#lesson.on .lwrap{animation:slidein .18s ease-out}
+@keyframes slidein{from{transform:translateX(14px);opacity:.55}to{transform:none;opacity:1}}
+.result{position:relative}
+.cf{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.rhero{display:flex;align-items:center;gap:6px}
+.intro .ihead{display:flex;align-items:center;gap:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#7F8C84"/></marker></defs></svg>
+<div id="app">
+  <header class="topbar">
+    <button class="topic-btn" id="topicBtn" aria-haspopup="dialog"><small>闖關學習區 · 換主題 ▾</small><b id="topicName"></b></button>
+    <div class="stats" id="stats"></div>
+  </header>
+  <main class="main" id="main"></main>
+  <nav class="tabbar">
+    <button class="tab on" data-tab="path"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>闖關</button>
+    <button class="tab" data-tab="words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21a2 2 0 0 0 2 2h13v-4"/></svg>重點表</button>
+    <button class="tab" data-tab="review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3v5h-5"/></svg>複習</button>
+  </nav>
+</div>
+<div id="lesson" role="dialog" aria-modal="true" aria-label="闖關中"></div>
+<div id="sheet"></div>
+<div id="chat" role="dialog" aria-modal="true" aria-label="問 AI"></div>
+
+<script>
+/* ---------- Past-paper data, generated from the study hub's exam page ---------- */
+const EXAMS=/*__EXAMS__*/{};
+const TOPIC_BUILDERS=[];
+
+/* ---------- Helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const pick=a=>a[Math.random()*a.length|0];
+const norm=s=>String(s).toLowerCase().replace(/[’‘`]/g,"'").replace(/[\s\-_]+/g,"").replace(/\.$/,"");
+function lev(a,b){const d=[];for(let i=0;i<=a.length;i++)d[i]=[i];for(let j=0;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+
+/* Step builders. Every step: k = card | choice | fill | order | match | flash | sort | drag | range | guide */
+const K=(title,html)=>({k:"card",title,html});
+const C=(q,o,a,why,x)=>({k:"choice",q,o,a,why,...x});
+const F=(q,ans,show,why,x)=>({k:"fill",q,ans,show,why,...x});
+const O=(q,seq,why,x)=>({k:"order",q,seq,why,...x});
+const M=(q,pairs)=>({k:"match",q,pairs});
+const Fl=(q,a,x)=>({k:"flash",q,a,...x});
+const G=fn=>({gen:fn});
+/* B: tap a card, then tap a bucket. items = [[text, bucket index], ...] */
+const B=(q,cats,items,why,x)=>({k:"sort",q,cats,items,why,...x});
+/* D: drag rows (or use the arrows) into the right order. seq = correct order; shown shuffled */
+const D=(q,seq,why,x)=>({k:"drag",q,seq,why,...x});
+/* Sl: slider. cfg = {min,max,step,init,unit,label,view:v=>html (live), ok:v=>bool, show:"answer text"}; init must be wrong */
+const Sl=(q,cfg,why,x)=>({k:"range",q,...cfg,why,...x});
+/* Gd: guided lesson inside one step. goal = what you'll understand; steps = [{q, o, a, miss:[why each option is wrong, "" for the answer], why, note}];
+   wrap = the rule you just derived. Wrong picks explain themselves and you pick again; no hearts lost. */
+const Gd=(goal,steps,wrap)=>({k:"guide",q:goal,goal,steps,wrap});
+
+/* Flow diagram used in feedback: one client/server pair per connection, each round trip a V */
+function flow(cols){
+  const left=22,cw=150,sh=34,top=24,total=Math.max(...cols.map(c=>(c.start||0)+c.seq.length));
+  const W=Math.max(left+cols.length*cw,240),H=top+total*sh+4;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="流程圖，總共 ${total} RTT">`;
+  for(let t=0;t<total;t++)s+=`<text x="2" y="${top+t*sh+sh/2+4}" font-size="12" font-weight="700">${t+1}</text>`;
+  cols.forEach((c,i)=>{const x=left+i*cw,cx=x+10,sx=x+cw-16,st=c.start||0,y0=top+st*sh,y1=y0+c.seq.length*sh;
+    s+=`<text x="${cx}" y="13" font-size="12" text-anchor="middle">C</text><text x="${sx}" y="13" font-size="12" text-anchor="middle">${c.s}</text>`;
+    s+=`<line x1="${cx}" y1="${y0}" x2="${cx}" y2="${y1}" stroke="currentColor"/><line x1="${sx}" y1="${y0}" x2="${sx}" y2="${y1}" stroke="currentColor"/>`;
+    c.seq.forEach((lb,t)=>{const y=y0+t*sh,col=lb==="TCP"?"var(--muted)":lb==="HTML"?"var(--accent)":"var(--ok)";
+      s+=`<line x1="${cx}" y1="${y+3}" x2="${sx-2}" y2="${y+sh/2-2}" stroke="${col}" stroke-width="1.6" marker-end="url(#ah)"/><line x1="${sx}" y1="${y+sh/2}" x2="${cx+2}" y2="${y+sh-3}" stroke="${col}" stroke-width="1.6" marker-end="url(#ah)"/><text x="${sx-5}" y="${y+sh-3}" font-size="12" text-anchor="end">${lb}</text>`})});
+  return `<div class="flowbox">${s}</svg></div>`;
+}
+const examChoice=(it,tag)=>({k:"choice",q:it.q,o:it.o,a:it.a,why:it.w,keep:true,en:true,flag:!!it.flag,tag:tag||it.y});
+const examFill=(it,tag)=>({k:"fill",q:it.q,ans:it.a,show:it.s,why:it.w,en:true,tag:tag||it.y});
+const examFlash=(it,tag)=>({k:"flash",q:it.q,a:it.a,en:true,tag:tag||it.y});
+
+/*__TOPICS__*/
+
+/* Topics live in topics/*.js; each pushes a builder returning {id,name,desc,note,units:[{title,sub,must?,nodes:[{title,exam?,steps}]}],terms}. */
+const TOPICS=TOPIC_BUILDERS.map(b=>b());
+const NODE_INDEX={};
+TOPICS.forEach(t=>{let n=0;t.units.forEach(u=>u.nodes.forEach(nd=>{nd.id=t.id+"/"+nd.title;nd.num=++n;nd.topic=t.id;nd.steps.forEach((s,i)=>{s.id=nd.id+"#"+(s.q||s.title||("g"+i));NODE_INDEX[s.id]=s})}));t.allNodes=t.units.flatMap(u=>u.nodes)});
+
+/* ---------- State ---------- */
+const KEY="quest-hub-v2";
+let S={topic:"net",xp:0,streak:0,last:null,day:null,dayXp:0,sound:true,vol:2,haptic:true,t:{}};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+if(!TOPICS.find(t=>t.id===S.topic))S.topic=TOPICS[0].id;
+const topic=()=>TOPICS.find(t=>t.id===S.topic);
+const tState=id=>S.t[id||S.topic]||(S.t[id||S.topic]={done:{},wrong:{}});
+const dstr=d=>d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+const today=()=>dstr(new Date());
+const yesterday=()=>dstr(new Date(Date.now()-864e5));
+const curStreak=()=>(S.last===today()||S.last===yesterday())?S.streak:0;
+const todayXp=()=>S.day===today()?S.dayXp:0;
+const GOAL=50;
+
+/* ---------- Sound ---------- */
+let actx=null;
+/* iPhone: the user wants the silent switch to mute these sounds, so the session is "ambient". A new
+   AudioContext starts suspended until it is resumed inside a tap. Unlock once on the first touch anywhere. */
+function audio(){try{if(navigator.audioSession)navigator.audioSession.type="ambient"}catch(e){}
+  if(!actx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;actx=new AC()}
+  if(actx.state!=="running"){try{actx.resume()}catch(e){}}return actx}
+function unlockAudio(){const a=audio();if(!a)return;try{const b=a.createBuffer(1,1,22050),src=a.createBufferSource();src.buffer=b;src.connect(a.destination);src.start(0)}catch(e){}}
+["pointerdown","touchend","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{once:true,capture:true}));
+/* Louder on phone speakers: a master gain into a compressor, notes with a fast attack and a short hold,
+   a brighter triangle wave plus a soft octave above, and no tones below ~300 Hz (tiny speakers can't play them). */
+const VOLS=[.35,.7,1.2];let master=null;
+function out(a){if(!master){const c=a.createDynamicsCompressor();c.threshold.value=-18;c.knee.value=12;c.ratio.value=4;c.attack.value=.003;c.release.value=.15;
+  master=a.createGain();master.connect(c);c.connect(a.destination)}master.gain.value=VOLS[S.vol??2];return master}
+function tone(seq){if(!S.sound)return;try{const a=audio();if(!a)return;const dst=out(a);let t=a.currentTime+.01;
+  seq.forEach(([f,d,w])=>{[[f,w||"triangle",.9],[f*2,"sine",.25]].forEach(([fr,type,lv])=>{const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=fr;
+      const pk=type==="square"?lv*.45:lv;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+.012);g.gain.setValueAtTime(pk,t+d*.55);g.gain.exponentialRampToValueAtTime(.001,t+d);
+      o.connect(g);g.connect(dst);o.start(t);o.stop(t+d+.02)});t+=d*.85})}catch(e){}}
+const sfx={ok:()=>tone([[660,.11],[988,.2]]),bad:()=>tone([[330,.16,"square"],[262,.26,"square"]]),combo:()=>tone([[660,.07],[880,.07],[1175,.18]]),win:()=>tone([[523,.12],[659,.12],[784,.12],[1047,.3]]),tap:()=>tone([[520,.04]])};
+
+/* "小封包" mascot: a packet with a red header band; mood = idle | ok | bad | win */
+function mascot(m,size){m=m||"idle";size=size||48;const ink="var(--ink)";
+  const eyes=(m==="ok"||m==="win")?`<path d="M18 29q3-4 6 0M36 29q3-4 6 0" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`
+    :m==="bad"?`<circle cx="21" cy="29" r="2.4" fill="${ink}"/><circle cx="39" cy="29" r="2.4" fill="${ink}"/><path d="M47 22q2.5 4 0 6.5q-2.5-2.5 0-6.5z" fill="var(--accent)"/>`
+    :`<circle cx="21" cy="29" r="2.6" fill="${ink}"/><circle cx="39" cy="29" r="2.6" fill="${ink}"/>`;
+  const mouth=m==="bad"?`<path d="M24 41q6-4 12 0" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`
+    :m==="win"?`<path d="M22 36q8 10 16 0z" fill="var(--stamp)" stroke="${ink}" stroke-width="2" stroke-linejoin="round"/>`
+    :`<path d="M23 37q7 6 14 0" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`;
+  const arms=m==="win"?`<path d="M8 34L2 22M52 34l6-12" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`:"";
+  return `<svg class="mascot ${m}" viewBox="0 0 60 60" width="${size}" height="${size}" aria-hidden="true">${arms}<rect x="8" y="12" width="44" height="40" rx="8" fill="var(--surface)" stroke="${ink}" stroke-width="2.4"/><path d="M9.2 22V20a6.8 6.8 0 0 1 6.8-6.8h28a6.8 6.8 0 0 1 6.8 6.8v2z" fill="var(--stamp)"/><text x="30" y="20.5" font-size="6.5" text-anchor="middle" fill="var(--surface)" font-family="ui-monospace,monospace" font-weight="700">HDR</text>${eyes}${mouth}<circle cx="15" cy="35" r="2.6" fill="var(--stamp)" opacity=".3"/><circle cx="45" cy="35" r="2.6" fill="var(--stamp)" opacity=".3"/></svg>`}
+/* Fallback tick for buzz(): clicks a tiny, near-invisible switch from code. In the Claude app on iPhone this stays silent
+   (only a real finger on a switch buzzes, see hz() below); kept in case another browser honours it. */
+let hapEl=null;
+function hapSwitch(){if(!hapEl||!hapEl.isConnected){hapEl=document.createElement("label");hapEl.setAttribute("aria-hidden","true");
+  hapEl.style.cssText="position:fixed;left:0;bottom:0;width:2px;height:2px;overflow:hidden;opacity:.01;pointer-events:none";
+  const i=document.createElement("input");i.type="checkbox";i.setAttribute("switch","");i.tabIndex=-1;hapEl.appendChild(i);document.body.appendChild(hapEl)}return hapEl}
+function hapticTick(){try{hapSwitch().click()}catch(e){}}
+const buzz=p=>{if(S&&S.haptic===false)return;let ok=false;try{if(navigator.vibrate)ok=navigator.vibrate(p)}catch(e){}
+  if(!ok){hapticTick();if(Array.isArray(p)&&p.length>2)setTimeout(hapticTick,90)}};
+/* Every button tap buzzes (user asked: "按哪裡都要").
+   Android: navigator.vibrate on any button click.
+   iPhone: only a real finger toggling an <input type=checkbox switch> buzzes (code-clicked switches stay silent in the
+   Claude app), so every button gets a near-invisible switch laid over it. The switch takes the tap and buzzes; the
+   button's own click runs a tick later so a re-render can't pull the switch out mid-tap. A MutationObserver re-adds the
+   switch whenever buttons are rendered or their text is replaced. */
+const IOS_TAP=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+const HZ_ON=IOS_TAP&&typeof navigator.vibrate!=="function";
+function hz(btn){if(btn.lastElementChild&&btn.lastElementChild.classList.contains("hz"))return;
+  btn.classList.add("hzb");const i=document.createElement("input");i.type="checkbox";i.setAttribute("switch","");i.className="hz";i.tabIndex=-1;i.setAttribute("aria-hidden","true");btn.appendChild(i);
+  const up=()=>btn.classList.remove("press");i.addEventListener("pointerdown",()=>{if(!btn.disabled)btn.classList.add("press")});
+  ["pointerup","pointercancel","pointerleave"].forEach(t=>i.addEventListener(t,up));
+  i.addEventListener("click",e=>{e.stopPropagation();up();if(btn.disabled||S.haptic===false)e.preventDefault();if(!btn.disabled)setTimeout(()=>btn.click(),0)})}
+function hzAll(){document.querySelectorAll("button").forEach(hz)}
+if(HZ_ON){let q=false;new MutationObserver(()=>{if(q)return;q=true;queueMicrotask(()=>{q=false;hzAll()})}).observe(document.documentElement,{childList:true,subtree:true});
+  addEventListener("DOMContentLoaded",hzAll)}
+else document.addEventListener("click",e=>{if(S.haptic===false||typeof navigator.vibrate!=="function")return;const b=e.target.closest&&e.target.closest("button");if(b&&!b.disabled)try{navigator.vibrate(10)}catch(x){}},true);
+const calm=()=>{try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}};
+function confetti(host){if(calm())return;const c=document.createElement("canvas");c.className="cf";host.appendChild(c);const r=host.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;const x=c.getContext("2d");x.scale(dpr,dpr);
+  const cs=getComputedStyle(document.documentElement),cols=["--stamp","--accent","--ok","--warn"].map(v=>cs.getPropertyValue(v).trim()||"#BF3A24");
+  const P=Array.from({length:90},()=>({x:r.width/2+(Math.random()-.5)*60,y:r.height*.3,vx:(Math.random()-.5)*10,vy:-Math.random()*10-3,s:5+Math.random()*5,a:Math.random()*6,va:(Math.random()-.5)*.4,c:pick(cols)}));
+  let t=0;const step=()=>{x.clearRect(0,0,r.width,r.height);P.forEach(p=>{p.vy+=.3;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6);x.restore()});if(++t<120)requestAnimationFrame(step);else c.remove()};requestAnimationFrame(step)}
+function countUp(el,to,suffix,prefix){prefix=prefix||"";if(calm()){el.textContent=prefix+to+suffix;return}const t0=performance.now(),d=700;const f=now=>{const k=Math.min(1,Math.max(0,(now-t0)/d));el.textContent=prefix+Math.round(to*(1-Math.pow(1-k,3)))+suffix;if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+const IC={
+  flame:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-4 3-7 1 1 2 2 2 4 1-2 2-5 1-9z"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21C5 15 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7-10 13z"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h.01M12 10h.01M15 10h.01"/></svg>',
+  target:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
+  grip:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+};
+
+/* ---------- Home ---------- */
+function renderStats(){$("#stats").innerHTML=`<div class="stat" title="連續天數">${IC.flame}${curStreak()}</div><div class="stat" title="經驗值">XP ${S.xp}</div>`;$("#topicName").textContent=topic().name}
+let TAB="path";
+function render(){renderStats();if(TAB==="path")renderPath();else if(TAB==="words")renderWords();else renderReview()}
+function setTab(t){TAB=t;document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));$("#main").scrollTop=0;render()}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+$("#topicBtn").addEventListener("click",topicSheet);
+
+function nextNode(){const st=tState();return topic().allNodes.find(n=>!st.done[n.id])}
+function renderPath(){
+  const t=topic(),st=tState(),all=t.allNodes,done=all.filter(n=>st.done[n.id]).length,nx=nextNode();
+  let h=`<div class="card" style="margin-bottom:16px"><div class="row between"><b>${esc(t.desc)}</b><span class="small muted" style="font-family:var(--mono)">${done}/${all.length} 關</span></div><div class="bar"><i style="width:${all.length?done/all.length*100:0}%"></i></div><div class="row between small"><span class="muted">今日 ${todayXp()} / ${GOAL} XP</span>${Object.keys(st.wrong).length?`<button class="linkbtn" id="goReview" style="min-height:32px">練錯題（${Object.keys(st.wrong).length}）</button>`:""}</div>${t.note?`<div class="small muted">${t.note}</div>`:""}</div>`;
+  let i=0;
+  t.units.forEach((u,ui)=>{
+    h+=`<div class="unit${u.must?" must":""}"><small>UNIT ${ui+1}</small><b>${esc(u.title)}</b><span>${esc(u.sub||"")}</span></div><div class="path">`;
+    u.nodes.forEach((n,k)=>{const d=st.done[n.id],cur=n===nx,off=Math.round(Math.sin(k*1.25)*56);i++;
+      h+=`<div class="nrow" style="--off:${off}px"><button class="node${n.exam?" exam":""}${d?" done":cur?" cur":""}" data-n="${n.id}" aria-label="${esc(n.title)}${d?"，已過關":""}">${cur?'<span class="bubble">接下來</span>':""}${d?IC.check:i}</button><div class="nlabel">${esc(n.title)}</div>${d?`<div class="nscore">${d}%</div>`:""}</div>`});
+    h+="</div>"});
+  $("#main").innerHTML=h;
+  document.querySelectorAll(".node").forEach(b=>b.addEventListener("click",()=>nodeSheet(b.dataset.n)));
+  const g=$("#goReview");if(g)g.addEventListener("click",startReview);
+}
+function nodeSheet(id){const n=topic().allNodes.find(x=>x.id===id),d=tState().done[id],c=n.steps.filter(s=>s.k!=="card").length;
+  sheet(`<h2>${esc(n.title)}</h2><div class="muted small">${c} 題${n.exam?"・沒有愛心、答錯不重考":"・5 顆愛心，答錯的題目會再考一次"}${d?`・最佳 ${d}%`:""}</div>`,[[d?"再練一次":"開始","",()=>startNode(n)]])}
+function sheet(html,acts){const el=$("#sheet");
+  el.innerHTML=`<div class="sbg"></div><div class="spanel" role="dialog" aria-modal="true">${html}<div class="sacts">${acts.map((a,i)=>`<button class="btn wide ${a[1]}" data-a="${i}">${a[0]}</button>`).join("")}<button class="btn ghost wide" data-close>關閉</button></div></div>`;
+  el.classList.add("on");const close=()=>{el.classList.remove("on");el.innerHTML=""};
+  el.querySelector(".sbg").onclick=close;el.querySelector("[data-close]").onclick=close;
+  el.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const f=acts[+b.dataset.a][2];close();f()});
+  el.querySelector(".btn").focus();return el}
+function topicSheet(){
+  const el=sheet(`<h2>選主題</h2><div class="stack" id="topicList">${TOPICS.map(t=>{const st=tState(t.id),d=t.allNodes.filter(n=>st.done[n.id]).length;return`<button class="topic-opt${t.id===S.topic?" on":""}" data-t="${t.id}"><b>${esc(t.name)}</b><span class="small muted">${esc(t.desc)}・${d}/${t.allNodes.length} 關</span></button>`}).join("")}</div><div class="small muted">要加新主題，把講義或題庫丟給 Claude，說「加到闖關學習區」。</div>`,[]);
+  el.querySelectorAll(".topic-opt").forEach(b=>b.onclick=()=>{S.topic=b.dataset.t;save();el.classList.remove("on");el.innerHTML="";setTab("path")});
+}
+
+/* ---------- Key-points tab ---------- */
+let WQ="";
+function renderWords(){const t=topic();
+  $("#main").innerHTML=`<div class="stack"><input class="search" id="wq" type="search" placeholder="搜尋重點" aria-label="搜尋重點" value="${esc(WQ)}"><div class="wl" id="wl"></div></div>`;
+  const draw=()=>{const q=WQ.trim().toLowerCase(),r=t.terms.filter(x=>!q||x.join(" ").toLowerCase().includes(q));
+    $("#wl").innerHTML=r.map(x=>`<div class="wi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")||'<div class="wi muted">找不到</div>'};
+  draw();$("#wq").addEventListener("input",e=>{WQ=e.target.value;draw()});
+}
+/* ---------- Review tab ---------- */
+function renderReview(){const st=tState(),ids=Object.keys(st.wrong).filter(i=>NODE_INDEX[i]),t=topic(),done=t.allNodes.filter(n=>st.done[n.id]).length;
+  $("#main").innerHTML=`<div class="stack">
+    <div class="card"><h3>錯題本</h3><div class="big-num">${ids.length}</div><div class="small muted">答錯的題目會留在這裡，答對才會移除。</div><button class="btn wide" id="rv" ${ids.length?"":"disabled"}>${ids.length?"開始練錯題":"目前沒有錯題"}</button></div>
+    <div class="card"><h3>隨機 10 題</h3><div class="small muted">從目前主題抽，適合零碎時間。</div><button class="btn ghost wide" id="rd">開始</button></div>
+    <div class="card"><div class="row between"><h3>進度</h3><span style="font-family:var(--mono)">${done}/${t.allNodes.length} 關</span></div><div class="small muted">連續 ${curStreak()} 天・總共 ${S.xp} XP</div></div>
+    <div class="card"><div class="switch"><span>音效</span><button class="tg${S.sound?" on":""}" id="snd" role="switch" aria-checked="${S.sound}" aria-label="音效"></button></div><div class="switch"><span>音量</span><div class="row" role="group" aria-label="音量">${["小","中","大"].map((x,i)=>`<button class="btn ${(S.vol??2)===i?"":"ghost"}" data-vol="${i}" style="min-height:40px;padding:0 14px" aria-pressed="${(S.vol??2)===i}">${x}</button>`).join("")}</div></div><div class="switch"><span>震動<span class="small muted" style="display:block;font-weight:500">Android 用震動；iPhone 需要 iOS 18 以上</span></span><button class="tg${S.haptic!==false?" on":""}" id="hap" role="switch" aria-checked="${S.haptic!==false}" aria-label="震動"></button></div></div>
+    <button class="btn ghost wide" id="rs">清除這個主題的進度</button>
+  </div>`;
+  if(ids.length)$("#rv").onclick=startReview;
+  $("#rd").onclick=startRandom;
+  $("#snd").onclick=()=>{S.sound=!S.sound;save();renderReview()};
+  document.querySelectorAll("[data-vol]").forEach(b=>b.onclick=()=>{S.vol=+b.dataset.vol;save();sfx.ok();renderReview()});
+  $("#hap").onclick=()=>{S.haptic=S.haptic===false;save();if(S.haptic)buzz(20);renderReview()};
+  $("#rs").onclick=()=>sheet("<h2>清除這個主題的進度？</h2><div class='small muted'>過關紀錄和錯題本都會清掉，XP 保留。</div>",[["確定清除","bad",()=>{S.t[S.topic]={done:{},wrong:{}};save();render()}]]);
+}
+
+/* ---------- Lesson engine ---------- */
+let L=null;
+function inst(d){
+  const s=d.gen?{...d.gen(),id:d.id,_def:d}:{...d,_def:d};
+  if(s.k==="choice"&&!s.keep){const ord=shuffle(s.o.map((_,i)=>i));s.o=ord.map(i=>d.gen?s.o[i]:d.o[i]);s.a=ord.indexOf(s.a)}
+  if(s.k==="order")s.bank=shuffle([...s.seq,...(s.extra||[])]);
+  if(s.k==="match"){s.l=shuffle(s.pairs.map((p,i)=>({t:p[0],i})));s.r=shuffle(s.pairs.map((p,i)=>({t:p[1],i})))}
+  if(s.k==="sort")s.pool=shuffle(s.items.map((_,i)=>i));
+  if(s.k==="guide")s.steps=s.steps.map(g=>{const ord=shuffle(g.o.map((_,i)=>i));return{...g,o:ord.map(i=>g.o[i]),miss:ord.map(i=>(g.miss||[])[i]||""),a:ord.indexOf(g.a)}});
+  if(s.k==="drag"){const id=s.seq.map((_,i)=>i);let o;do{o=shuffle(id)}while(s.seq.length>1&&o.every((v,i)=>v===i));s.start=o}
+  return s;
+}
+function startLesson(node){
+  L={node,queue:node.steps.map(inst),graded:0,hearts:5,right:0,wrong:0,combo:0,exam:!!node.exam,t0:Date.now(),seen:0};
+  L.total=L.queue.length;$("#lesson").classList.add("on");next();
+}
+const startNode=n=>startLesson(n);
+function startReview(){const st=tState(),defs=Object.keys(st.wrong).map(i=>NODE_INDEX[i]).filter(Boolean);if(!defs.length)return;startLesson({id:null,title:"練錯題",steps:shuffle(defs).slice(0,15)})}
+function startRandom(){const defs=topic().allNodes.flatMap(n=>n.steps).filter(s=>s.k!=="card"&&s.k!=="flash"&&s.k!=="match"&&s.k!=="guide");startLesson({id:null,title:"隨機 10 題",steps:shuffle(defs).slice(0,10)})}
+function quit(){$("#lesson").classList.remove("on");$("#lesson").innerHTML="";L=null;render()}
+function next(){if(L.step)L.graded++;if(L.hearts<=0)return failed();if(!L.queue.length)return finish();L.step=L.queue.shift();L.state="check";L.sel=null;L.picked=[];L.typed="";L.revealed=false;L.seen++;renderStep()}
+function head(){const g=L.graded+(L.state==="cont"?1:0),pct=Math.min(100,g/(L.graded+1+L.queue.length)*100);
+  return `<div class="lhead"><button class="x" id="lx" aria-label="離開">${IC.x}</button><div class="pbar" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>${L.exam?`<div class="hearts" style="color:var(--muted)">${L.right}/${L.right+L.wrong}</div>`:`<div class="hearts">${IC.heart}${L.hearts}</div>`}</div>`}
+const tagLine=s=>(s.tag||s.flag)?`<div class="tag">${s.tag?esc(s.tag):""}${s.flag?'<span class="flag">推論</span>':""}</div>`:"";
+function renderStep(){const s=L.step;let body="",btn="檢查",enabled=false;
+  if(s.k==="card"){body=`<div class="intro"><div class="ihead">${mascot("idle",40)}<h3>${s.title}</h3></div>${s.html}</div>${askBtn("看不懂這張？問 AI")}`;btn="知道了";enabled=true}
+  if(s.k==="guide"){L.gi=0;L.gsel=null;L.gdone=false;L.gwrong=[];
+    body=`<div class="goal">${IC.target}<div><span class="small muted">這題的目標</span><br>${s.goal}</div></div><div class="gnotes" id="gn"></div><div class="stack" id="gq"></div>`}
+  if(s.k==="choice"){body=`${tagLine(s)}<p class="prompt${s.en?" en":""}">${s.q}</p><div class="opts">${s.o.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${s.keep&&s.en?"ABCD"[i]:i+1}</span><span>${o}</span></button>`).join("")}</div>`}
+  if(s.k==="fill"){const hint=(s.show||"").replace(/[^\s\-]/g,(c,i,str)=>(i===0||/[\s\-]/.test(str[i-1]))?c:"_");
+    body=`${tagLine(s)}<p class="prompt${s.en?" en":""}">${s.q}</p><input class="tinput" id="ti" ${s.num?'inputmode="decimal"':''} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="輸入答案" placeholder="${s.num?"輸入數字":"輸入答案（寫全名）"}">${s.num?"":`<button class="linkbtn" id="hintBtn">看提示</button><div class="hint" id="hint" hidden>${esc(hint)}</div>`}`}
+  if(s.k==="order"){body=`${tagLine(s)}<p class="prompt">${s.q}</p><div class="ansline" id="ansl" aria-label="你排的順序"></div><div class="bank" id="bank">${s.bank.map((t,i)=>`<button class="tile" data-i="${i}">${esc(t)}</button>`).join("")}</div>`}
+  if(s.k==="match"){btn="繼續";body=`<p class="prompt">${s.q}</p><div class="match"><div class="mcol">${s.l.map(x=>`<button class="mt" data-side="l" data-i="${x.i}">${esc(x.t)}</button>`).join("")}</div><div class="mcol">${s.r.map(x=>`<button class="mt" data-side="r" data-i="${x.i}">${esc(x.t)}</button>`).join("")}</div></div>`}
+  if(s.k==="sort"){L.at=s.items.map(()=>-1);L.ssel=s.pool[0];
+    body=`${tagLine(s)}<p class="prompt">${s.q}</p><div class="small muted">點卡片，再點它該去的類別。點類別裡的卡片可以拿回來。</div><div class="pool" id="pool"></div><div class="bks">${s.cats.map((c,b)=>`<div class="bk" id="bk${b}"><button class="bkh" data-b="${b}"><span>${c}</span><span class="bkp">放這裡</span></button><div class="bkc"></div></div>`).join("")}</div>`}
+  if(s.k==="drag"){L.ord=s.start.slice();enabled=true;
+    body=`${tagLine(s)}<p class="prompt">${s.q}</p><div class="small muted">按住一列上下拖，或用右邊的箭頭移動。</div><div class="drl" id="drl"></div>`}
+  if(s.k==="range"){L.val=null;
+    body=`${tagLine(s)}<p class="prompt">${s.q}</p><div class="rng"><div class="rv">${s.label?`<span class="small muted">${s.label}</span>`:""}<b id="rvv">${s.init}</b><span>${s.unit||""}</span></div><div class="rrow"><button class="dra rstep" id="rm" aria-label="減少">−</button><input type="range" id="rg" min="${s.min}" max="${s.max}" step="${s.step||1}" value="${s.init}" aria-label="${s.label||"數值"}"><button class="dra rstep" id="rp" aria-label="增加">＋</button></div><div class="rview" id="rview">${s.view(s.init)}</div></div>`}
+  if(s.k==="flash"){btn="看參考答案";enabled=true;body=`${tagLine(s)}<p class="prompt en">${s.q}</p><div id="fa"></div>`}
+  $("#lesson").innerHTML=`<div class="lwrap">${head()}<div class="combo" id="combo">${L.combo>=3?L.combo+" 連對":""}</div><div class="lbody" id="lb">${body}</div><div class="foot" id="foot"><div class="fb" id="fb" hidden></div><button class="btn wide" id="go" ${enabled?"":"disabled"}>${btn}</button></div></div>`;
+  $("#lx").onclick=()=>sheet("<h2>要離開這一關嗎？</h2><div class='small muted'>這一關的進度不會保留，錯題本會保留。</div>",[["離開","bad",quit]]);
+  $("#go").onclick=onGo;
+  if(s.k==="choice")document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pickOpt(+b.dataset.i));
+  if(s.k==="fill"){const ti=$("#ti");ti.oninput=()=>{L.typed=ti.value;$("#go").disabled=!ti.value.trim()};ti.onkeydown=e=>{if(e.key==="Enter"&&L.state==="check"&&ti.value.trim()){e.preventDefault();onGo()}};ti.focus({preventScroll:true});
+    const hb=$("#hintBtn");if(hb)hb.onclick=()=>{$("#hint").hidden=false;hb.hidden=true}}
+  if(s.k==="order")wireOrder();
+  if(s.k==="match")wireMatch();
+  if(s.k==="sort")wireSort();
+  if(s.k==="drag")drawDrag();
+  if(s.k==="range")wireRange();
+  if(s.k==="guide")drawGuide();
+}
+/* ---- guide: small "what do you need / why" questions that build one idea ---- */
+function drawGuide(){const s=L.step,g=s.steps[L.gi],n=s.steps.length;
+  $("#gn").innerHTML=s.steps.slice(0,L.gi+(L.gdone?1:0)).map(x=>`<div class="gn">${IC.check}<span>${x.note}</span></div>`).join("");
+  $("#gq").innerHTML=`<div class="gstep">第 ${L.gi+1} / ${n} 步</div><p class="prompt">${g.q}</p><div class="opts">${g.o.map((o,i)=>{const bad=L.gwrong.includes(i),ok=L.gdone&&i===g.a;
+      return `<button class="opt${ok?" ok":bad?" bad":L.gsel===i?" sel":""}" data-g="${i}"${L.gdone||bad?" disabled":""}><span class="k">${i+1}</span><span>${o}</span></button>`}).join("")}</div><div id="gfb"></div>`;
+  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{if(L.gdone)return;L.gsel=+b.dataset.g;document.querySelectorAll("[data-g]").forEach(x=>x.classList.toggle("sel",+x.dataset.g===L.gsel));$("#go").disabled=false})}
+function guideFb(ok,html){const f=$("#gfb");f.innerHTML=`<div class="gfb ${ok?"ok":"bad"}"><b class="t">${ok?"對！":"不是這個，再選一次"}</b><div>${html}</div>${askBtn()}</div>`;f.scrollIntoView({behavior:"smooth",block:"nearest"})}
+function guideGo(){const s=L.step,g=s.steps[L.gi],go=$("#go");
+  if(L.gdone){if(L.gi<s.steps.length-1){L.gi++;L.gdone=false;L.gsel=null;L.gwrong=[];drawGuide();go.textContent="檢查";go.disabled=true;go.classList.remove("ok","bad");$("#lb").scrollTop=0;return}
+    return grade(true,`<b>推導完成</b><br>${s.wrap}`,{noPenalty:true})}
+  if(L.gsel==null)return;
+  if(L.gsel===g.a){L.gdone=true;sfx.ok();buzz(12);drawGuide();guideFb(true,g.why||"");go.textContent=L.gi<s.steps.length-1?"下一步":"完成推導";go.classList.add("ok");go.disabled=false}
+  else{L.gwrong.push(L.gsel);const why=g.miss[L.gsel]||"再想一下這一步要的是什麼。";L.gsel=null;sfx.bad();buzz([40,50,40]);drawGuide();guideFb(false,why);go.disabled=true}}
+/* ---- sort: cards into buckets ---- */
+function drawSort(){const s=L.step,done=L.state!=="check";
+  const chip=i=>`<button class="chip${L.ssel===i&&!done?" sel":""}${done?(L.at[i]===s.items[i][1]?" ok":" bad"):""}" data-i="${i}"${done?" disabled":""}>${s.items[i][0]}</button>`;
+  const left=s.pool.filter(i=>L.at[i]<0);
+  $("#pool").innerHTML=left.map(chip).join("")||`<span class="small muted">全部放好了，按「檢查」。</span>`;
+  s.cats.forEach((c,b)=>{$(`#bk${b} .bkc`).innerHTML=s.pool.filter(i=>L.at[i]===b).map(chip).join("")});
+  document.querySelectorAll(".bk").forEach(el=>el.classList.toggle("ready",L.ssel!=null&&!done));
+  document.querySelectorAll(".bkh").forEach(b=>b.disabled=done);
+  if(done)return;
+  document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const i=+c.dataset.i;if(L.at[i]>=0)L.at[i]=-1;L.ssel=i;drawSort()});
+  $("#go").disabled=left.length>0}
+function wireSort(){document.querySelectorAll(".bkh").forEach(h=>h.onclick=()=>{if(L.state!=="check"||L.ssel==null)return;
+  L.at[L.ssel]=+h.dataset.b;const nx=L.step.pool.find(i=>L.at[i]<0);L.ssel=nx===undefined?null:nx;drawSort();
+  const g=$("#go");if(!g.disabled){g.classList.remove("go-ready");void g.offsetWidth;g.classList.add("go-ready")}});drawSort()}
+/* ---- drag: reorder rows ---- */
+function drawDrag(){const s=L.step,done=L.state!=="check",n=L.ord.length;
+  $("#drl").innerHTML=L.ord.map((v,p)=>`<div class="dr${done?(v===p?" ok":" bad"):""}" data-p="${p}"><span class="drh" aria-hidden="true">${IC.grip}</span><span class="drt">${s.seq[v]}</span>${done?"":`<button class="dra" data-mv="-1" data-p="${p}" aria-label="上移"${p===0?" disabled":""}>${IC.up}</button><button class="dra" data-mv="1" data-p="${p}" aria-label="下移"${p===n-1?" disabled":""}>${IC.down}</button>`}</div>`).join("");
+  if(done)return;
+  document.querySelectorAll("#drl .dra").forEach(b=>b.onclick=()=>{const p=+b.dataset.p,q=p+ +b.dataset.mv;if(q<0||q>=n)return;[L.ord[p],L.ord[q]]=[L.ord[q],L.ord[p]];drawDrag()});
+  document.querySelectorAll("#drl .dr").forEach(row=>row.onpointerdown=e=>dragRow(e,row))}
+function dragRow(e,row){if(L.state!=="check"||e.target.closest(".dra")||e.button>0)return;e.preventDefault();
+  const rows=[...document.querySelectorAll("#drl .dr")],from=rows.indexOf(row),R0=rows.map(r=>r.getBoundingClientRect()),
+    pitch=R0[from].height+8,y0=e.clientY;let to=from;
+  try{row.setPointerCapture(e.pointerId)}catch(x){}row.classList.add("lift");
+  row.onpointermove=ev=>{const dy=ev.clientY-y0;row.style.transform=`translateY(${dy}px)`;const mid=R0[from].top+R0[from].height/2+dy;
+    const t=rows.filter((r,j)=>j!==from&&R0[j].top+R0[j].height/2<mid).length;
+    if(t!==to){to=t;buzz(8);rows.forEach((r,j)=>{if(j===from)return;r.style.transform=(from<j&&j<=to)?`translateY(${-pitch}px)`:(to<=j&&j<from)?`translateY(${pitch}px)`:""})}};
+  row.onpointerup=row.onpointercancel=()=>{row.onpointermove=row.onpointerup=row.onpointercancel=null;
+    if(to!==from){const v=L.ord.splice(from,1)[0];L.ord.splice(to,0,v)}drawDrag()}}
+/* ---- range: slider with live result ---- */
+function wireRange(){const s=L.step,rg=$("#rg"),st=s.step||1;
+  const set=v=>{v=Math.min(s.max,Math.max(s.min,v));if(v===(L.val??s.init)&&L.val!=null)return;L.val=v;rg.value=v;$("#rvv").textContent=v;$("#rview").innerHTML=s.view(v);$("#go").disabled=false;buzz(6)};
+  rg.oninput=()=>set(+rg.value);$("#rm").onclick=()=>set((L.val??s.init)-st);$("#rp").onclick=()=>set((L.val??s.init)+st)}
+function pickOpt(i){if(L.state!=="check")return;const g=$("#go");if(g.disabled){g.classList.remove("go-ready");void g.offsetWidth;g.classList.add("go-ready")}L.sel=i;document.querySelectorAll(".opt").forEach(b=>b.classList.toggle("sel",+b.dataset.i===i));$("#go").disabled=false}
+function wireOrder(){const s=L.step;const draw=()=>{$("#ansl").innerHTML=L.picked.map((i,p)=>`<button class="tile" data-p="${p}">${esc(s.bank[i])}</button>`).join("");
+    document.querySelectorAll("#bank .tile").forEach(b=>b.classList.toggle("used",L.picked.includes(+b.dataset.i)));
+    document.querySelectorAll("#ansl .tile").forEach(b=>b.onclick=()=>{if(L.state!=="check")return;L.picked.splice(+b.dataset.p,1);draw()});
+    $("#go").disabled=L.picked.length!==s.seq.length};
+  document.querySelectorAll("#bank .tile").forEach(b=>b.onclick=()=>{if(L.state!=="check")return;const i=+b.dataset.i;if(L.picked.includes(i))return;if(L.picked.length>=s.seq.length)return;L.picked.push(i);draw();const t=document.querySelectorAll("#ansl .tile");const last=t[t.length-1];if(last)last.classList.add("pop")});draw()}
+function wireMatch(){let sel=null,left=L.step.pairs.length,miss=0;
+  document.querySelectorAll(".mt").forEach(b=>b.onclick=()=>{if(b.classList.contains("gone")||L.state!=="check")return;
+    if(!sel||sel.dataset.side===b.dataset.side){if(sel)sel.classList.remove("sel");sel=b;b.classList.add("sel");return}
+    if(sel.dataset.i===b.dataset.i){[sel,b].forEach(x=>{x.classList.remove("sel");x.classList.add("gone");x.disabled=true});sel=null;sfx.ok();left--;
+      if(!left)grade(miss===0,miss?`配錯 ${miss} 次，愛心已經扣過了。`:"全部配對正確。",{noPenalty:true})}
+    else{const a=sel,c=b;miss++;[a,c].forEach(x=>{x.classList.remove("sel");x.classList.add("bad")});sel=null;sfx.bad();buzz([30,40,30]);if(!L.exam){L.hearts--;refreshHearts(true);if(L.hearts<=0){setTimeout(failed,350);return}}setTimeout(()=>{a.classList.remove("bad");c.classList.remove("bad")},400)}})}
+function refreshHearts(lost){const h=document.querySelector(".hearts");if(!h)return;h.innerHTML=IC.heart+L.hearts;if(lost){h.classList.remove("lost");void h.offsetWidth;h.classList.add("lost")}}
+function record(ok){const d=L.step._def;if(!d||!d.id)return;const st=tState(L.node.topic||S.topic);if(ok)delete st.wrong[d.id];else if(d.k!=="card")st.wrong[d.id]=1;save()}
+const PRAISE=["答對了","正確","很好","沒錯","漂亮"],CHEER=["差一點，看一下解析","沒關係，等一下會再考一次","記住這題，下次就會了"];
+function grade(ok,html,opt){opt=opt||{};const s=L.step;L.state="cont";L.lastOk=ok;record(ok);let lost=false;
+  if(ok){if(!s.retry)L.right++;L.combo++;sfx.ok();buzz(12)}
+  else{if(!s.retry)L.wrong++;L.combo=0;sfx.bad();buzz([40,50,40]);
+    if(!L.exam&&!opt.noPenalty){L.hearts--;lost=true;L.queue.push({...inst(s._def),_def:s._def,retry:true})}}
+  const foot=$("#foot");foot.classList.remove("ok","bad");void foot.offsetWidth;foot.classList.add(ok?"ok":"bad");const fb=$("#fb");fb.hidden=false;
+  const title=ok?pick(PRAISE):(L.exam||opt.noPenalty?"不對":pick(CHEER));
+  fb.innerHTML=`<div class="fbrow">${mascot(ok?"ok":"bad",44)}<div class="t">${title}</div></div><div class="a">${html}</div>${askBtn()}`;
+  const go=$("#go");go.disabled=false;go.textContent="繼續";go.classList.remove("ok","bad","go-ready");go.classList.add(ok?"ok":"bad");
+  const hd=document.querySelector(".lhead");if(hd){hd.outerHTML=head();$("#lx").onclick=()=>sheet("<h2>要離開這一關嗎？</h2><div class='small muted'>這一關的進度不會保留，錯題本會保留。</div>",[["離開","bad",quit]])}
+  const pb=document.querySelector(".pbar");if(pb&&ok){pb.classList.add("bump")}
+  if(lost)refreshHearts(true);
+  if(ok&&!s.retry&&!L.exam){const h=document.querySelector(".lhead");if(h){const f=document.createElement("span");f.className="xpf";f.textContent="+2 XP";h.appendChild(f);setTimeout(()=>f.remove(),950)}}
+  const c=$("#combo");if(c){const big=[5,10,15,20,30].includes(L.combo);
+    c.innerHTML=L.combo>=3?`<span class="cb${big?" big":""}">${IC.flame}${big?"連對 "+L.combo+" 題！":L.combo+" 連對"}</span>`:"";if(big){sfx.combo();buzz([15,30,15])}}
+  foot.scrollTop=0;go.focus({preventScroll:true});
+}
+function onGo(){const s=L.step;
+  if(L.state==="cont")return next();
+  if(s.k==="card")return next();
+  if(s.k==="choice"){if(L.sel==null)return;const ok=L.sel===s.a;document.querySelectorAll(".opt").forEach(b=>{const i=+b.dataset.i;b.classList.remove("sel");if(i===s.a)b.classList.add("ok");else if(i===L.sel)b.classList.add("bad");b.disabled=true});
+    return grade(ok,(ok?"":`答案：<span class="ans">${s.o[s.a]}</span><br>`)+s.why)}
+  if(s.k==="fill"){const v=$("#ti").value.trim();if(!v)return;$("#ti").disabled=true;
+    const nv=norm(v),hit=s.ans.some(a=>norm(a)===nv),abbr=(s.abbr||[]).some(a=>norm(a)===nv);
+    const near=!hit&&!s.num&&!abbr&&s.ans.some(a=>norm(a).length>=6&&lev(norm(a),nv)===1);
+    if(abbr)return grade(false,`這是縮寫，考試不給分。全名：<span class="ans">${esc(s.show)}</span>`);
+    if(near)return grade(true,`拼字差一點，正確是 <span class="ans">${esc(s.show)}</span>。${s.why}`);
+    return grade(hit,(hit?"":`答案：<span class="ans">${esc(s.show)}</span><br>`)+s.why)}
+  if(s.k==="order"){const got=L.picked.map(i=>s.bank[i]),ok=got.length===s.seq.length&&got.every((t,i)=>t===s.seq[i]);
+    return grade(ok,(ok?"":`正確順序：<span class="ans">${s.seq.map(esc).join(" → ")}</span><br>`)+s.why)}
+  if(s.k==="guide")return guideGo();
+  if(s.k==="sort"){if(L.at.some(b=>b<0))return;const ok=L.at.every((b,i)=>b===s.items[i][1]);
+    grade(ok,(ok?"":`正確分法：<br>${s.cats.map((c,b)=>`<b>${c}</b>：${s.items.filter(x=>x[1]===b).map(x=>x[0]).join("、")}`).join("<br>")}<br>`)+s.why);drawSort();return}
+  if(s.k==="drag"){const ok=L.ord.every((v,i)=>v===i);grade(ok,(ok?"":`正確順序：<span class="ans">${s.seq.join(" → ")}</span><br>`)+s.why);drawDrag();return}
+  if(s.k==="range"){if(L.val==null)return;const ok=!!s.ok(L.val);["#rg","#rm","#rp"].forEach(x=>$(x).disabled=true);
+    return grade(ok,(ok?"":`答案：<span class="ans">${s.show}</span><br>`)+s.why)}
+  if(s.k==="flash"){if(!L.revealed){L.revealed=true;$("#fa").innerHTML=`<div class="ansbox">${s.a}</div>${askBtn()}`;const f=$("#foot");f.innerHTML=`<div class="row"><button class="btn bad" id="no" style="flex:1">還不會</button><button class="btn ok" id="yes" style="flex:1">我會了</button></div>`;
+      const self=ok=>{L.state="cont";record(ok);buzz(ok?12:[30,40]);if(!s.retry){if(ok)L.right++;else L.wrong++}sfx[ok?"ok":"bad"]();next()};$("#no").onclick=()=>self(false);$("#yes").onclick=()=>self(true);$("#fa").scrollIntoView({behavior:"smooth",block:"start"})}return}
+}
+function failed(){L.state="end";$("#lesson").innerHTML=`<div class="lwrap"><div class="result">${mascot("bad",96)}<h1>愛心用完了</h1><p class="muted" style="margin:0">答錯的題目已經收進錯題本，再來一次會更順。</p><div class="stack" style="width:100%"><button class="btn wide" id="again">再挑戰一次</button><button class="btn ghost wide" id="leave">回路徑</button></div></div></div>`;
+  $("#again").onclick=()=>startLesson(L.node);$("#leave").onclick=quit}
+function finish(){const n=L.node,tot=L.right+L.wrong,acc=tot?Math.round(L.right/tot*100):100,gain=5+L.right*2,perfect=tot>0&&L.wrong===0;
+  S.xp+=gain;if(S.day!==today()){S.day=today();S.dayXp=0}S.dayXp+=gain;
+  const newDay=S.last!==today();if(newDay){S.streak=S.last===yesterday()?S.streak+1:1;S.last=today()}
+  if(n.id){const st=tState(n.topic);st.done[n.id]=Math.max(st.done[n.id]||0,acc||1)}
+  save();sfx.win();buzz([20,40,20,40,60]);
+  const mins=Math.max(1,Math.round((Date.now()-L.t0)/60000));
+  const nx=n.id?nextNode():null;const goal=todayXp()>=GOAL&&todayXp()-gain<GOAL;
+  $("#lesson").innerHTML=`<div class="lwrap"><div class="result" id="res"><div class="rhero">${mascot("win",84)}<div class="rstamp">${perfect?"全對":"過關"}</div></div><h1>${perfect?"全部答對！":esc(n.title)+" 過關"}</h1>${newDay?`<div class="cb big">${IC.flame}連續 ${curStreak()} 天</div>`:""}${goal?`<div class="cb big">今日目標 ${GOAL} XP 達成</div>`:""}<div class="rt"><div class="rtile"><small>XP</small><b id="rx">+0</b></div><div class="rtile"><small>正確率</small><b id="ra">0%</b></div><div class="rtile"><small>時間</small><b>${mins} 分</b></div></div><div class="stack" style="width:100%">${nx?`<button class="btn wide" id="nextN">下一關：${esc(nx.title)}</button>`:""}<button class="btn ghost wide" id="leave">回路徑</button></div></div></div>`;
+  countUp($("#rx"),gain,"","+");countUp($("#ra"),acc,"%");confetti($("#res"));
+  if(nx)$("#nextN").onclick=()=>startLesson(nx);$("#leave").onclick=quit;
+}
+/* ---------- Ask AI: a chat about the question you just did (sample capability, viewer's own Claude usage) ---------- */
+let AI=null;const CHATS=new Map();
+try{window.claude&&claude.use("sample").then(f=>{AI=f;document.documentElement.classList.toggle("ai",!!f)}).catch(()=>{})}catch(e){}
+const askBtn=(label)=>`<button class="askai" data-ask="1">${IC.chat}<span>${label||"不懂為什麼？問 AI"}</span></button>`;
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-ask]");if(b&&L)openChat()});
+const txt=h=>{const d=document.createElement("div");d.innerHTML=String(h??"");d.querySelectorAll("br").forEach(x=>x.replaceWith("\n"));return d.textContent.replace(/[ \t]+\n/g,"\n").trim()};
+function ctxOf(){const s=L.step,out=[`科目：${topic().name}；關卡：${L.node&&L.node.title||""}`],done=L.state==="cont";
+  if(s.k==="card"){out.push(`教學卡「${txt(s.title)}」：`,txt(s.html));return out.join("\n")}
+  if(s.k==="guide"){const g=s.steps[L.gi];out.push(`引導題的目標：${txt(s.goal)}`);s.steps.slice(0,L.gi).forEach((x,i)=>out.push(`已完成第 ${i+1} 步：${txt(x.q)} → ${txt(x.o[x.a])}`));
+    out.push(`目前第 ${L.gi+1} 步：${txt(g.q)}`,`選項：${g.o.map(txt).join("／")}`,`正確答案：${txt(g.o[g.a])}`);
+    if(L.gwrong.length)out.push(`學生選錯過：${L.gwrong.map(i=>txt(g.o[i])+"（"+txt(g.miss[i])+"）").join("、")}`);if(g.why)out.push(`解析：${txt(g.why)}`);return out.join("\n")}
+  out.push(`題目：${txt(s.q)}`);
+  if(s.k==="choice"){out.push(`選項：${s.o.map(txt).join("／")}`,`正確答案：${txt(s.o[s.a])}`);if(L.sel!=null)out.push(`學生選了：${txt(s.o[L.sel])}`)}
+  if(s.k==="fill"){out.push(`正確答案：${txt(s.show)}`);const v=($("#ti")||{}).value||L.typed;if(v)out.push(`學生寫了：${v}`)}
+  if(s.k==="order"){out.push(`正確順序：${s.seq.map(txt).join(" → ")}`);if(L.picked&&L.picked.length)out.push(`學生排成：${L.picked.map(i=>txt(s.bank[i])).join(" → ")}`)}
+  if(s.k==="match")out.push(`正確配對：${s.pairs.map(p=>txt(p[0])+" = "+txt(p[1])).join("；")}`);
+  if(s.k==="sort"){const by=f=>s.cats.map((c,b)=>txt(c)+"："+s.items.filter((x,i)=>f(x,i)===b).map(x=>txt(x[0])).join("、")).join("；");out.push(`正確分類：${by(x=>x[1])}`);if(L.at)out.push(`學生分成：${by((x,i)=>L.at[i])}`)}
+  if(s.k==="drag"){out.push(`正確順序：${s.seq.map(txt).join(" → ")}`);if(L.ord)out.push(`學生排成：${L.ord.map(i=>txt(s.seq[i])).join(" → ")}`)}
+  if(s.k==="range"){out.push(`正確答案：${txt(s.show)}`);if(L.val!=null)out.push(`學生選了：${L.val} ${s.unit||""}`)}
+  if(s.k==="flash")out.push(`參考答案：${txt(s.a)}`);
+  if(done&&s.k!=="flash"&&s.k!=="guide")out.push(`結果：學生這題${L.lastOk?"答對了":"答錯了"}`);
+  if(s.why)out.push(`解析：${txt(s.why)}`);if(s.flag)out.push("注意：這題答案是推論，有爭議空間。");
+  return out.join("\n")}
+const RULES=`你是一位很有耐心的家教，學生是初學者，正在用闖關題目準備考試。
+回答規則：
+- 用繁體中文（台灣用語），專有名詞保留英文。
+- 第一句就直接回答學生的問題，不要客套。
+- 先給一個很小的具體例子或生活比喻，再講原理。出現新術語就順便用一句白話解釋。
+- 學生答錯時，指出他的想法是哪一步走偏，不要只重複正確答案。
+- 簡短：大約 3 到 8 句，或幾個條列。不要用表格，不要用 LaTeX，算式用純文字，例如 (1 + 6) × 2 = 14。
+- 可以用 **粗體** 標重點、用「- 」開頭條列、用 \`反引號\` 包算式。
+- 以下面的題目和解析為準；如果題目標示有爭議，要老實說。
+學生剛剛做的題目：
+`;
+const md=t=>esc(t).replace(/`([^`\n]+)`/g,"<code>$1</code>").replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>").replace(/^\s*[-*] /gm,"• ").replace(/\n/g,"<br>");
+const AI_ERR={not_granted:"這個頁面沒有被允許使用 Claude。",sampling_disabled:"這個帳號目前不能使用 Claude。",not_declared:"這個頁面沒有開啟 AI 功能。",capability_disabled:"這個畫面不能使用 AI。",capability_removed:"這個 App 版本不支援 AI，請更新。",
+  rate_limited:"問太多次了，或用量到上限，等一下再試。",session_expired:"登入過期，請重新登入 Claude。",refused:"這個問題 AI 不回答，換個問法試試。",empty_completion:"AI 沒有回答，換個問法試試。",prompt_too_large:"對話太長了，關掉重開一個。"};
+const AI_GONE=["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
+let chatCtl=null;
+function openChat(){const s=L.step,key=txt(s.q||s.title)+"#"+(s.k==="guide"?L.gi:"");let c=CHATS.get(key);
+  if(!c){c={turns:[]};CHATS.set(key,c)}c.ctx=ctxOf();
+  const quick=s.k==="card"?["這張在講什麼？","可以舉個生活例子嗎？","為什麼要這樣？"]:(L.state==="cont"&&L.lastOk)||(s.k==="guide"&&L.gdone)?["為什麼答案是這個？","可以舉個生活例子嗎？","還有什麼容易搞混的？"]:["為什麼答案是這個？","我的想法哪裡錯了？","可以舉個生活例子嗎？"];
+  const el=$("#chat");el.innerHTML=`<div class="sbg" id="cbg"></div><div class="cpanel"><div class="chead"><b>問 AI</b><button class="x" id="cx" aria-label="關閉">${IC.x}</button></div>
+    <details class="cctx"><summary>AI 看得到的題目資料</summary><div>${esc(c.ctx)}</div></details>
+    <div class="cmsgs" id="cm" aria-live="polite"></div>
+    <div class="cquick">${quick.map(q=>`<button data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
+    <div class="cform"><textarea id="ci" rows="1" placeholder="哪裡不懂？直接問" enterkeyhint="send"></textarea><button class="btn" id="cs">送出</button></div>
+    <div class="small muted cnote">用的是你自己的 Claude 額度。AI 也可能出錯，跟講義對不上時以講義為準。</div></div>`;
+  el.classList.add("on");drawMsgs(c);
+  const close=()=>{if(chatCtl)chatCtl.abort();el.classList.remove("on");el.innerHTML=""};
+  $("#cx").onclick=close;$("#cbg").onclick=close;
+  el.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>sendChat(c,b.dataset.q));
+  const ci=$("#ci");ci.oninput=()=>{ci.style.height="auto";ci.style.height=Math.min(ci.scrollHeight,120)+"px"};
+  ci.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("#cs").click()}};
+  $("#cs").onclick=()=>{if(chatCtl){chatCtl.abort();return}const v=ci.value.trim();if(!v)return;ci.value="";ci.oninput();sendChat(c,v)}}
+function drawMsgs(c,live){const m=$("#cm");if(!m)return;
+  m.innerHTML=(c.turns.length?"":`<div class="cmsg a">對這題哪裡不懂？直接問，或點下面的問題。</div>`)+c.turns.map(t=>`<div class="cmsg ${t.role==="user"?"u":"a"}${t.err?" err":""}">${t.role==="user"?esc(t.content):md(t.content)}</div>`).join("")+(live!=null?`<div class="cmsg a" id="clive">${live?md(live):"思考中…"}</div>`:"");
+  m.scrollTop=m.scrollHeight}
+async function sendChat(c,q){if(!AI||chatCtl)return;c.turns=c.turns.filter(t=>!t.err);c.turns.push({role:"user",content:q});drawMsgs(c,"");
+  const cs=$("#cs");if(cs)cs.textContent="停止";chatCtl=new AbortController();
+  const input=[{role:"user",content:RULES+c.ctx},...c.turns.slice(-12).map(t=>({role:t.role,content:t.content}))];
+  try{const{text,truncated}=await AI(input,{cache:false,signal:chatCtl.signal,modelTier:"default",effort:"low",onText:({text})=>{const b=$("#clive");if(b){b.innerHTML=md(text);$("#cm").scrollTop=$("#cm").scrollHeight}}});
+    c.turns.push({role:"assistant",content:text+(truncated?"\n（回答太長被截斷了，可以請它說短一點）":"")})}
+  catch(e){const code=e&&e.code;if(e&&e.text&&code!=="refused")c.turns.push({role:"assistant",content:e.text});
+    if(code!=="cancelled")c.turns.push({role:"assistant",err:1,content:AI_ERR[code]||"連線中斷了，可以再送一次。"});
+    if(AI_GONE.includes(code)){AI=null;document.documentElement.classList.remove("ai")}}
+  finally{chatCtl=null;const b=$("#cs");if(b)b.textContent="送出";drawMsgs(c)}}
+
+/* keyboard (desktop) */
+document.addEventListener("keydown",e=>{if(!L||L.state==="end"||$("#sheet").classList.contains("on")||$("#chat").classList.contains("on")||e.target.tagName==="TEXTAREA")return;
+  if(e.target.tagName==="INPUT")return;
+  if(L.step&&L.step.k==="choice"&&L.state==="check"&&/^[1-4]$/.test(e.key)){const i=+e.key-1;if(i<L.step.o.length)pickOpt(i)}
+  if(e.key==="Enter"&&e.target.tagName!=="BUTTON"){const g=$("#go");if(g&&!g.disabled){e.preventDefault();onGo()}}
+});
+render();
+</script>
+</body>
+</html>
