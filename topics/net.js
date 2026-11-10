@@ -61,6 +61,9 @@ const gCircR=()=>{const[Lk,u]=pick([[100,25],[60,20],[120,30],[100,20],[90,30],[
     `電路交換要先預留：<code>${Lk} ÷ ${u} = ${N}</code>。就算有人沒在講話，資源也被佔著。`)};
 
 /* ---------- Topic: computer networks midterm ---------- */
+/* Setups shared by a card and the questions after it (ctx keeps the setup on screen while answering). */
+const SET_VOICE=`<p style="margin:0">語音 64 kbps，封包 80 bytes，線路 1 Mbps，propagation 5 ms。</p>`;
+const SET_SW=`<p style="margin:0">線路 100 Mbps，每人傳送時用 50 Mbps，但只有 <b>50%</b> 的時間在傳。總共 3 人。</p>`;
 function buildNet(){return{
   id:"net",name:"電腦網路 期中",desc:"CH1–2，先練概念，考古題在最後",
   note:'看不懂概念時，回<a href="https://claude.ai/artifact/1HUUG2mEu1Eo4wFTNzzkQo" target="_blank" rel="noopener">學習區的總整理</a>。問答題和流程圖記得也要動筆練。',
@@ -167,10 +170,10 @@ function buildNet(){return{
     ]},
     {title:"即時語音算一次",steps:[
       K("語音多了一段等待",`<code class="formula">總時間 = 湊滿一包 + transmission + propagation</code><p class="small muted" style="margin:0">bit 產生後，要等封包湊滿才能送出。這段最容易漏掉。</p>`),
-      K("題目設定",`<p style="margin:0">語音 64 kbps，封包 80 bytes，線路 1 Mbps，propagation 5 ms。</p>`),
-      F("湊滿一包要幾 ms？",["10"],"10 ms","<code>80 × 8 = 640 bits；640 ÷ 64000 = 0.01 s</code>",{num:true}),
-      F("transmission 是幾 ms？",["0.64"],"0.64 ms","<code>640 bits ÷ 1,000,000 bps = 0.00064 s</code>",{num:true}),
-      F("從 bit 產生到解碼，總共幾 ms？",["15.64"],"15.64 ms","<code>10 + 0.64 + 5 = 15.64</code>",{num:true})
+      K("題目設定",SET_VOICE),
+      F("湊滿一包要幾 ms？",["10"],"10 ms","<code>80 × 8 = 640 bits；640 ÷ 64000 = 0.01 s</code>",{num:true,ctx:SET_VOICE}),
+      F("transmission 是幾 ms？",["0.64"],"0.64 ms","<code>640 bits ÷ 1,000,000 bps = 0.00064 s</code>",{num:true,ctx:SET_VOICE}),
+      F("從 bit 產生到解碼，總共幾 ms？",["15.64"],"15.64 ms","<code>10 + 0.64 + 5 = 15.64</code>",{num:true,ctx:SET_VOICE})
     ]},
     {title:"Store-and-forward",steps:[
       K("公式",`<code class="formula">經過 N 段線路：N × L / R</code><p class="small muted" style="margin:0">每台路由器都要收完整包才往外送。這裡先不計 propagation 和排隊。</p>`),
@@ -192,11 +195,11 @@ function buildNet(){return{
       C("打電話前先把整條路的資源預留好，這是？",["circuit switching","packet switching","pipelining","peering"],0,"資源預留是電路交換的特徵。"),
       C("把線路依<b>時間</b>切成時槽，每條連線輪流用，這是？",["TDM","FDM","DNS","CDN"],0,"Time-Division Multiplexing。切頻率才是 FDM。"),
       G(gTdm),G(gTdm),
-      K("換個數字",`<p style="margin:0">線路 100 Mbps，每人傳送時用 50 Mbps，但只有 <b>50%</b> 的時間在傳。總共 3 人。</p>`),
-      F("circuit switching 最多服務幾人？",["2"],"2 人","<code>100 ÷ 50 = 2</code>",{num:true}),
-      F("3 人同時傳的機率？（寫小數）",["0.125",".125"],"0.125","<code>0.5³ = 0.125</code>",{num:true}),
-      F("佇列變長的時間比例？（寫小數）",["0.125",".125"],"0.125","只有 3 人同時傳時，150 才會大於 100。",{num:true}),
-      F("佇列變短的時間比例？（寫小數）",["0.5",".5"],"0.5","最多 1 人在傳：<code>0.125 + 0.375 = 0.5</code>。剛好 2 人時輸入等於輸出，佇列不變。",{num:true}),
+      K("換個數字",SET_SW),
+      F("circuit switching 最多服務幾人？",["2"],"2 人","<code>100 ÷ 50 = 2</code>",{num:true,ctx:SET_SW}),
+      F("3 人同時傳的機率？（寫小數）",["0.125",".125"],"0.125","<code>0.5³ = 0.125</code>",{num:true,ctx:SET_SW}),
+      F("佇列變長的時間比例？（寫小數）",["0.125",".125"],"0.125","只有 3 人同時傳時，150 才會大於 100。",{num:true,ctx:SET_SW}),
+      F("佇列變短的時間比例？（寫小數）",["0.5",".5"],"0.5","最多 1 人在傳：<code>0.125 + 0.375 = 0.5</code>。剛好 2 人時輸入等於輸出，佇列不變。",{num:true,ctx:SET_SW}),
       B("每個特徵屬於哪一種交換？",["circuit switching","packet switching"],[["通話開始前先預留資源",0],["用 TDM 或 FDM 切線路",0],["沒在傳的時候資源也被佔著",0],["store-and-forward",1],["可能要排隊，也可能掉封包",1],["使用者斷斷續續傳時，能服務更多人",1]],"電路交換先預留、保證品質；封包交換按需搶用，適合斷斷續續（bursty）的流量。"),
       G(gCircR)
     ]},
@@ -466,10 +469,10 @@ local DNS 替你跑腿，不嚴格屬於階層</code>`),
   ]},
   {title:"2025 考卷",sub:"考古題：沒有愛心，答錯不重考，最後看分數",nodes:[
     {title:"2025 RTT 大題",exam:true,steps:[
-      F("(a) HTML＋5 張圖，non-persistent，non-parallel",["12"],"12 RTT","老師的算法：<code>(1 + 5 JPEG) × 2 = 12</code>",{num:true,tag:"2025 問答 1"}),
-      F("(b) persistent，non-parallel",["7"],"7 RTT","老師的算法：<code>2 + 5 JPEG = 7</code>",{num:true,tag:"2025 問答 1"}),
-      F("(c) non-persistent，one additional parallel connection（總共 2 條）",["8"],"8 RTT","老師的算法：<code>(1 + ⌈5/2⌉ JPEG) × 2 = 8</code>",{num:true,tag:"2025 問答 1"}),
-      F("(d) persistent，non-parallel，3 張圖在另一台，可同時連",["6"],"6 RTT","老師的算法：<code>2 + 1 + 3 JPEG = 6</code>"+flow([{s:"S1",seq:["TCP","HTML","JPEG1","JPEG2"]},{s:"S2",start:2,seq:["TCP","JPEG3","JPEG4","JPEG5"]}]),{num:true,tag:"2025 問答 1"})
+      F("(a) HTML＋5 張圖，non-persistent，non-parallel",["12"],"12 RTT","老師的算法：<code>(1 + 5 JPEG) × 2 = 12</code>",{num:true,tag:"2025 問答 1",ctx:fromExam("y2025",2,0).q}),
+      F("(b) persistent，non-parallel",["7"],"7 RTT","老師的算法：<code>2 + 5 JPEG = 7</code>",{num:true,tag:"2025 問答 1",ctx:fromExam("y2025",2,0).q}),
+      F("(c) non-persistent，one additional parallel connection（總共 2 條）",["8"],"8 RTT","老師的算法：<code>(1 + ⌈5/2⌉ JPEG) × 2 = 8</code>",{num:true,tag:"2025 問答 1",ctx:fromExam("y2025",2,0).q}),
+      F("(d) persistent，non-parallel，3 張圖在另一台，可同時連",["6"],"6 RTT","老師的算法：<code>2 + 1 + 3 JPEG = 6</code>"+flow([{s:"S1",seq:["TCP","HTML","JPEG1","JPEG2"]},{s:"S2",start:2,seq:["TCP","JPEG3","JPEG4","JPEG5"]}]),{num:true,tag:"2025 問答 1",ctx:fromExam("y2025",2,0).q})
     ]},
     {title:"2025 填充",exam:true,steps:EXAM.y2025.parts[0].items.map(i=>examFill(i,"2025"))},
     {title:"2025 單選",exam:true,steps:EXAM.y2025.parts[1].items.map(i=>examChoice(i,"2025"))},
@@ -477,9 +480,9 @@ local DNS 替你跑腿，不嚴格屬於階層</code>`),
   ]},
   {title:"2024 考卷",sub:"考古題：沒有愛心，答錯不重考，最後看分數",nodes:[
     {title:"2024 RTT 大題",exam:true,steps:[
-      F("(a) HTML＋6 張圖，non-persistent，non-parallel",["14"],"14 RTT","<code>(1 + 6) × 2 = 14</code>",{num:true,tag:"2024 問答 1"}),
-      F("(b) persistent，non-parallel",["8"],"8 RTT","<code>2 + 6 = 8</code>",{num:true,tag:"2024 問答 1"}),
-      F("(c) persistent，以<b>總共 2 條</b>計算",["6"],"6 RTT","<code>2 + 1 + ⌈5/2⌉ = 6</code>。原題自相矛盾，同時寫了 two additional 和 two in total，作答時要先寫明假設。總共 3 條則是 5 RTT。",{num:true,tag:"2024 問答 1"})
+      F("(a) HTML＋6 張圖，non-persistent，non-parallel",["14"],"14 RTT","<code>(1 + 6) × 2 = 14</code>",{num:true,tag:"2024 問答 1",ctx:fromExam("y2024",2,0).q}),
+      F("(b) persistent，non-parallel",["8"],"8 RTT","<code>2 + 6 = 8</code>",{num:true,tag:"2024 問答 1",ctx:fromExam("y2024",2,0).q}),
+      F("(c) persistent，以<b>總共 2 條</b>計算",["6"],"6 RTT","<code>2 + 1 + ⌈5/2⌉ = 6</code>。原題自相矛盾，同時寫了 two additional 和 two in total，作答時要先寫明假設。總共 3 條則是 5 RTT。",{num:true,tag:"2024 問答 1",ctx:fromExam("y2024",2,0).q})
     ]},
     {title:"2024 填充",exam:true,steps:EXAM.y2024.parts[0].items.map(i=>examFill(i,"2024"))},
     {title:"2024 單選",exam:true,steps:EXAM.y2024.parts[1].items.map(i=>examChoice(i,"2024"))},

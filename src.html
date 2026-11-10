@@ -130,6 +130,9 @@ b{font-weight:900}
 .lbody{flex:1;overflow-y:auto;padding:6px 16px 16px;display:flex;flex-direction:column;gap:12px}
 .prompt{font-size:17px;font-weight:900;margin:0;line-height:1.45}
 .prompt.en{font-size:15px;font-weight:700}
+.stem{border-left:4px solid var(--accent);background:var(--stamp-bg);border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.5}
+.stem summary{font-weight:900;font-size:12px;color:var(--muted);cursor:pointer;min-height:28px;display:flex;align-items:center}
+.stem .sbody{max-height:34vh;overflow:auto;margin-top:4px}
 .tag{align-self:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
 .flag{display:inline-block;font-family:var(--body);font-size:12px;font-weight:700;color:var(--warn);border:1px solid var(--warn);border-radius:99px;padding:0 7px;margin-left:6px}
 .opts{display:flex;flex-direction:column;gap:8px}
@@ -597,6 +600,7 @@ function renderStep(){const s=L.step;let body="",btn="檢查",enabled=false;
   if(s.k==="range"){L.val=null;
     body=`${tagLine(s)}<p class="prompt">${s.q}</p><div class="rng"><div class="rv">${s.label?`<span class="small muted">${s.label}</span>`:""}<b id="rvv">${s.init}</b><span>${s.unit||""}</span></div><div class="rrow"><button class="dra rstep" id="rm" aria-label="減少">−</button><input type="range" id="rg" min="${s.min}" max="${s.max}" step="${s.step||1}" value="${s.init}" aria-label="${s.label||"數值"}"><button class="dra rstep" id="rp" aria-label="增加">＋</button></div><div class="rview" id="rview">${s.view(s.init)}</div></div>`}
   if(s.k==="flash"){btn="看參考答案";enabled=true;body=`${tagLine(s)}<p class="prompt en">${s.q}</p><div id="fa"></div>`}
+  if(s.ctx&&s.k!=="card"&&s.k!=="guide")body=`<details class="stem" open><summary>題目設定（點一下收合）</summary><div class="sbody">${s.ctx}</div></details>`+body;
   $("#lesson").innerHTML=`<div class="lwrap">${head()}<div class="combo" id="combo">${L.combo>=3?L.combo+" 連對":""}</div><div class="lbody" id="lb">${body}</div><div class="foot" id="foot"><div class="fb" id="fb" hidden></div><button class="btn wide" id="go" ${enabled?"":"disabled"}>${btn}</button></div></div>`;
   $("#lx").onclick=()=>sheet("<h2>要離開這一關嗎？</h2><div class='small muted'>這一關的進度不會保留，錯題本會保留。</div>",[["離開","bad",quit]]);
   $("#go").onclick=onGo;
@@ -733,7 +737,8 @@ function ctxOf(){const s=L.step,out=[`科目：${topic().name}；關卡：${L.no
   if(s.k==="guide"){const g=s.steps[L.gi];out.push(`引導題的目標：${txt(s.goal)}`);s.steps.slice(0,L.gi).forEach((x,i)=>out.push(`已完成第 ${i+1} 步：${txt(x.q)} → ${txt(x.o[x.a])}`));
     out.push(`目前第 ${L.gi+1} 步：${txt(g.q)}`,`選項：${g.o.map(txt).join("／")}`,`正確答案：${txt(g.o[g.a])}`);
     if(L.gwrong.length)out.push(`學生選錯過：${L.gwrong.map(i=>txt(g.o[i])+"（"+txt(g.miss[i])+"）").join("、")}`);if(g.why)out.push(`解析：${txt(g.why)}`);return out.join("\n")}
-  out.push(`題目：${txt(s.q)}`);
+  if(s.ctx)out.push(`題目設定：${txt(s.ctx)}`);
+  out.push(`${s.ctx?"這一小題":"題目"}：${txt(s.q)}`);
   if(s.k==="choice"){out.push(`選項：${s.o.map(txt).join("／")}`,`正確答案：${txt(s.o[s.a])}`);if(L.sel!=null)out.push(`學生選了：${txt(s.o[L.sel])}`)}
   if(s.k==="fill"){out.push(`正確答案：${txt(s.show)}`);const v=($("#ti")||{}).value||L.typed;if(v)out.push(`學生寫了：${v}`)}
   if(s.k==="order"){out.push(`正確順序：${s.seq.map(txt).join(" → ")}`);if(L.picked&&L.picked.length)out.push(`學生排成：${L.picked.map(i=>txt(s.bank[i])).join(" → ")}`)}
