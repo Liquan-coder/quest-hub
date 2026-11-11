@@ -81,6 +81,7 @@ b{font-weight:900}
 .card h3{margin:0;font-size:15px;font-weight:900}
 .muted{color:var(--muted)}
 .small{font-size:13px}
+.sync{margin-top:6px}.sync.bad{color:var(--bad)}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--muted)}
 .bar{height:10px;border-radius:99px;background:var(--lock);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .4s}
@@ -917,10 +918,74 @@ TOPICS.forEach(t=>{let n=0;t.units.forEach(u=>u.nodes.forEach(nd=>{nd.id=t.id+"/
 
 /* ---------- State ---------- */
 const KEY="quest-hub-v2";
-let S={topic:"net",xp:0,streak:0,last:null,day:null,dayXp:0,sound:true,vol:2,haptic:true,t:{}};
+const fresh=()=>({topic:"net",xp:0,streak:0,last:null,day:null,dayXp:0,sound:true,vol:2,haptic:true,t:{}});
+let S=fresh();
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* S.ts = time of the last change. It never goes backwards, so a device whose clock runs slow still writes a newer ts than the one it read. */
+function save(){S.ts=Math.max(Date.now(),(S.ts||0)+1);saveLocal();cloudQueue()}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 if(!TOPICS.find(t=>t.id===S.topic))S.topic=TOPICS[0].id;
+
+/* ---------- Cloud save (db capability, the viewer's private data/users/<id>/ subtree) ----------
+   localStorage alone gets wiped in the phone app and never reaches another device, so progress also lives in one db doc.
+   The doc holds S as a JSON string (step ids contain "/" and "#"). Newer ts wins; the first sync of a visit merges instead,
+   so progress made on this device before (or without) the cloud is never thrown away. Topic and sound/volume/haptics stay per device. */
+const DEVICE_PREFS=["topic","sound","vol","haptic"];
+const CLOUD={st:"local",msg:"",ref:null,ready:false,busy:false,again:false,timer:null};
+const SYNC_TXT={local:"只存在這台裝置",loading:"正在連線雲端…",ok:"已同步到雲端，換裝置也接得上",slow:"暫時連不上雲端，進度先存在這台裝置",err:"雲端存檔失敗，進度先存在這台裝置",off:"沒有登入 Claude，進度只存在這台裝置"};
+const syncText=()=>"存檔："+SYNC_TXT[CLOUD.st]+(CLOUD.msg?"（"+CLOUD.msg+"）":"");
+function setSync(st,msg){CLOUD.st=st;CLOUD.msg=msg||"";const el=$("#syncLine");if(el){el.textContent=syncText();el.classList.toggle("bad",st==="err"||st==="slow")}}
+const hasProgress=s=>(s.xp||0)>0||Object.values(s.t||{}).some(x=>Object.keys(x.done||{}).length||Object.keys(x.wrong||{}).length);
+function cloudCopy(){const o={...S};DEVICE_PREFS.forEach(k=>delete o[k]);return o}
+function adopt(c){const keep={};DEVICE_PREFS.forEach(k=>keep[k]=S[k]);S=Object.assign(fresh(),c,keep);saveLocal();render()}
+/* c = cloud, l = this device. Lessons: best score of either; wrong lists: union; streak/day: whichever is later. */
+function mergeState(c,l){const m=Object.assign(fresh(),c,{ts:Math.max(c.ts||0,l.ts||0),xp:Math.max(c.xp||0,l.xp||0),t:{}});
+  DEVICE_PREFS.forEach(k=>m[k]=l[k]);
+  const dn=s=>s?+new Date(String(s).replace(/-/g,"/")):0;
+  if(dn(l.last)>dn(c.last)||(l.last===c.last&&(l.streak||0)>(c.streak||0))){m.last=l.last;m.streak=l.streak}
+  if(dn(l.day)>dn(c.day)||(l.day===c.day&&(l.dayXp||0)>(c.dayXp||0))){m.day=l.day;m.dayXp=l.dayXp}
+  new Set([...Object.keys(c.t||{}),...Object.keys(l.t||{})]).forEach(id=>{const a=(c.t||{})[id]||{},b=(l.t||{})[id]||{},done={...a.done};
+    Object.entries(b.done||{}).forEach(([k,v])=>done[k]=Math.max(done[k]||0,v));m.t[id]={done,wrong:{...a.wrong,...b.wrong}}});
+  return m}
+async function cloudInit(){
+  if(!window.claude||!claude.use)return;              // local test page: stays "local"
+  setSync("loading");
+  let db=null,user=null;
+  try{[db,user]=await Promise.all([claude.use("db"),claude.use("user")])}catch(e){}
+  const uid=user?await user.id():null;
+  if(!db){setSync("local");return}
+  if(!uid){setSync("off");return}
+  CLOUD.ref=db.doc("data/users/"+uid+"/quest-progress");
+  const base=S.ts||0;                                  // what this device had when the page opened
+  const slow=setTimeout(()=>{if(!CLOUD.ready)setSync("slow")},10000);
+  CLOUD.ref.onSnapshot(snap=>{
+    if(!CLOUD.ready&&snap.metadata.fromCache)return;   // decide the first sync on confirmed data only
+    let c=null;try{if(snap.exists){const d=snap.data();if(typeof d.s==="string")c=JSON.parse(d.s)}}catch(e){}
+    if(!CLOUD.ready){CLOUD.ready=true;clearTimeout(slow);setSync("ok");
+      if(!c){if(hasProgress(S))save();return}          // save() stamps a ts, so other devices see it as newer than nothing
+      const playedHere=(S.ts||0)>base||(!base&&hasProgress(S));   // changes since open, or progress saved before cloud existed
+      if((c.ts||0)>base||!base){if(playedHere){S=mergeState(c,S);render();save()}else adopt(c)}
+      else if((S.ts||0)>(c.ts||0))cloudPush();
+      return}
+    if(c&&(c.ts||0)>(S.ts||0))adopt(c);                // another device saved: take it (our own echo has the same ts)
+  },e=>{clearTimeout(slow);setSync("err",e&&e.code);if(!CLOUD.ready)CLOUD.ref=null});
+}
+function cloudQueue(){if(!CLOUD.ref||!CLOUD.ready)return;clearTimeout(CLOUD.timer);CLOUD.timer=setTimeout(cloudPush,800)}
+async function cloudPush(retry){clearTimeout(CLOUD.timer);CLOUD.timer=null;
+  if(!CLOUD.ref||!CLOUD.ready)return;
+  if(CLOUD.busy){CLOUD.again=true;return}             // one write at a time; the next one sends the latest S
+  const s=JSON.stringify(cloudCopy());
+  if(s.length>240000){setSync("err","進度資料太大");return}
+  CLOUD.busy=true;CLOUD.again=false;
+  try{await CLOUD.ref.set({v:1,ts:S.ts||0,s});setSync("ok")}
+  catch(e){const code=e&&e.code;
+    if(code==="unavailable"&&!retry){CLOUD.busy=false;setTimeout(()=>cloudPush(true),1000+Math.random()*2000);return}
+    setSync("err",code);
+    if(["revoked","not_granted","capability_disabled","capability_removed","invalid_argument","transform_error"].includes(code))CLOUD.ref=null}
+  CLOUD.busy=false;if(CLOUD.again)cloudPush()}
+/* closing the app or switching away: send a pending save right now instead of waiting for the timer */
+addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&CLOUD.timer)cloudPush()});
+addEventListener("pagehide",()=>{if(CLOUD.timer)cloudPush()});
 const topic=()=>TOPICS.find(t=>t.id===S.topic);
 const tState=id=>S.t[id||S.topic]||(S.t[id||S.topic]={done:{},wrong:{}});
 const dstr=d=>d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
@@ -1052,7 +1117,7 @@ function renderReview(){const st=tState(),ids=Object.keys(st.wrong).filter(i=>NO
   $("#main").innerHTML=`<div class="stack">
     <div class="card"><h3>錯題本</h3><div class="big-num">${ids.length}</div><div class="small muted">答錯的題目會留在這裡，答對才會移除。</div><button class="btn wide" id="rv" ${ids.length?"":"disabled"}>${ids.length?"開始練錯題":"目前沒有錯題"}</button></div>
     <div class="card"><h3>隨機 10 題</h3><div class="small muted">從目前主題抽，適合零碎時間。</div><button class="btn ghost wide" id="rd">開始</button></div>
-    <div class="card"><div class="row between"><h3>進度</h3><span style="font-family:var(--mono)">${done}/${t.allNodes.length} 關</span></div><div class="small muted">連續 ${curStreak()} 天・總共 ${S.xp} XP</div></div>
+    <div class="card"><div class="row between"><h3>進度</h3><span style="font-family:var(--mono)">${done}/${t.allNodes.length} 關</span></div><div class="small muted">連續 ${curStreak()} 天・總共 ${S.xp} XP</div><div class="small muted sync${CLOUD.st==="err"||CLOUD.st==="slow"?" bad":""}" id="syncLine">${esc(syncText())}</div></div>
     <div class="card"><div class="switch"><span>音效</span><button class="tg${S.sound?" on":""}" id="snd" role="switch" aria-checked="${S.sound}" aria-label="音效"></button></div><div class="switch"><span>音量</span><div class="row" role="group" aria-label="音量">${["小","中","大"].map((x,i)=>`<button class="btn ${(S.vol??2)===i?"":"ghost"}" data-vol="${i}" style="min-height:40px;padding:0 14px" aria-pressed="${(S.vol??2)===i}">${x}</button>`).join("")}</div></div><div class="switch"><span>震動<span class="small muted" style="display:block;font-weight:500">Android 用震動；iPhone 需要 iOS 18 以上</span></span><button class="tg${S.haptic!==false?" on":""}" id="hap" role="switch" aria-checked="${S.haptic!==false}" aria-label="震動"></button></div></div>
     <button class="btn ghost wide" id="rs">清除這個主題的進度</button>
   </div>`;
@@ -1306,6 +1371,7 @@ document.addEventListener("keydown",e=>{if(!L||L.state==="end"||$("#sheet").clas
   if(e.key==="Enter"&&e.target.tagName!=="BUTTON"){const g=$("#go");if(g&&!g.disabled){e.preventDefault();onGo()}}
 });
 render();
+cloudInit();
 </script>
 </body>
 </html>
